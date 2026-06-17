@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AgileFlow
 
-## Getting Started
+Agile project management SPA built with Next.js 16 (static export), Zustand, React Query, and MSW mocks.
 
-First, run the development server:
+## Quick start
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Demo accounts**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Email | Password | Role |
+|-------|----------|------|
+| admin@agileflow.com | admin123 | Admin / Scrum Master |
+| dev@agileflow.com | dev123 | Developer |
 
-## Learn More
+## Environment
 
-To learn more about Next.js, take a look at the following resources:
+Copy `.env.example` to `.env.local`:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8080/api
+NEXT_PUBLIC_USE_MSW=true
+NEXT_PUBLIC_STANDUP_END_HOUR=10
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `NEXT_PUBLIC_USE_MSW=true` — intercept API calls with MSW (development/demo)
+- `NEXT_PUBLIC_USE_MSW=false` — call the Java/Tomcat REST API at `NEXT_PUBLIC_API_URL`
 
-## Deploy on Vercel
+## Build & deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run build
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Output is written to `out/`. Serve the folder as static files (Tomcat, nginx, CDN).
+
+### Tomcat
+
+1. Copy contents of `out/` to a Tomcat webapp directory (e.g. `webapps/agileflow/`).
+2. Ensure `mockServiceWorker.js` is served from the app root when using MSW in production demos.
+3. For client-side routes, configure a 404 fallback to `index.html` if your server requires it for unknown paths.
+
+## API contract
+
+Shared TypeScript DTOs for the Java backend live in [`lib/api/types.ts`](lib/api/types.ts).
+
+## Features
+
+- JWT auth (client-side) with Admin/Scrum Master and Developer roles
+- Dashboard, projects, team, multi-sprint planning
+- Kanban board with drag-and-drop (`@dnd-kit`)
+- Daily standup with morning window gate on the board
+- Burndown, velocity, and standup reports

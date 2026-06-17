@@ -1,0 +1,68 @@
+"use client";
+
+import { useDroppable } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { Plus } from "lucide-react";
+import type { BoardColumn, ProjectMember } from "@/lib/api/types";
+import { KanbanCard } from "@/components/kanban/kanban-card";
+import { AddTaskDialog } from "@/components/tasks/add-task-dialog";
+import type { CreateTaskFormData } from "@/components/tasks/create-task-form";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+export function KanbanColumn({
+  column,
+  members,
+  onCreateTask,
+  creating,
+}: {
+  column: BoardColumn;
+  members: ProjectMember[];
+  onCreateTask: (columnId: string, data: CreateTaskFormData) => void;
+  creating?: boolean;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: column.id });
+  const taskIds = column.tasks.map((t) => t.id);
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "flex w-[280px] shrink-0 flex-col rounded-2xl border border-slate-200/80 bg-slate-50/80",
+        isOver && "border-blue-200 bg-blue-50/40 ring-2 ring-blue-100",
+      )}
+    >
+      <div className="flex items-start justify-between gap-2 border-b border-slate-200/60 px-4 py-3.5">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-800">{column.name}</h3>
+          <p className="text-xs text-slate-400">{column.tasks.length} tasks</p>
+        </div>
+        <AddTaskDialog
+          members={members}
+          columnLabel={column.name}
+          onSubmit={(data) => onCreateTask(column.id, data)}
+          loading={creating}
+          trigger={
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0 text-slate-500 hover:text-blue-600"
+              title={`Add task to ${column.name}`}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          }
+        />
+      </div>
+      <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+        <div className="flex min-h-[120px] flex-col gap-2 p-3">
+          {column.tasks
+            .sort((a, b) => a.order - b.order)
+            .map((task) => (
+              <KanbanCard key={task.id} task={task} />
+            ))}
+        </div>
+      </SortableContext>
+    </div>
+  );
+}
