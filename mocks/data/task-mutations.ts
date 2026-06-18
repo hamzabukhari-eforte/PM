@@ -22,6 +22,7 @@ export function mergeTaskUpdate(task: Task, body: UpdateTaskInput): Task {
     ...timeFields,
     status: nextStatus,
     columnId: body.columnId !== undefined ? body.columnId : task.columnId,
+    subtasks: body.subtasks !== undefined ? body.subtasks : task.subtasks,
   };
 
   if (

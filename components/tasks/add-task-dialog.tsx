@@ -16,15 +16,18 @@ import {
   type CreateTaskFormData,
 } from "@/components/tasks/create-task-form";
 import type { ProjectMember } from "@/lib/api/types";
+import type { LinkTarget } from "@/lib/utils/task-hierarchy";
 
 export function AddTaskDialog({
   members,
+  linkTargets = [],
   columnLabel,
   onSubmit,
   loading,
   trigger,
 }: {
   members: ProjectMember[];
+  linkTargets?: LinkTarget[];
   columnLabel?: string;
   onSubmit: (data: CreateTaskFormData) => void;
   loading?: boolean;
@@ -47,7 +50,7 @@ export function AddTaskDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle>Create task</DialogTitle>
           <DialogDescription>
@@ -58,6 +61,7 @@ export function AddTaskDialog({
         </DialogHeader>
         <CreateTaskForm
           members={members}
+          linkTargets={linkTargets}
           onSubmit={handleSubmit}
           onCancel={() => setOpen(false)}
           loading={loading}

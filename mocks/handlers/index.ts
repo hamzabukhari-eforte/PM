@@ -25,7 +25,8 @@ import type {
 } from "@/lib/api/types";
 import { normalizeStandupEntry, standupIncludesProject } from "@/lib/utils/standup";
 import { mergeTaskUpdate } from "../data/task-mutations";
-import { createBaseTask, createPersonalTask } from "../data/task-factory";
+import { createBaseTask, createPersonalTask, mapCreateSubtasks, statusFromColumnId } from "../data/task-factory";
+import { canMoveTaskToColumn } from "@/lib/utils/task-status-flow";
 import { dashboardAnalytics } from "../data/analytics";
 import { nextReminderAt } from "@/lib/utils/routine";
 import {
@@ -332,6 +333,15 @@ export const handlers = [
 
         const task = col.tasks[idx];
         if (body.columnId && body.columnId !== col.id) {
+          if (!canMoveTaskToColumn(col.id, body.columnId)) {
+            return HttpResponse.json(
+              {
+                message:
+                  "Tasks must move one column at a time: To Do → In Progress → Review → Done",
+              },
+              { status: 400 },
+            );
+          }
           col.tasks.splice(idx, 1);
           const targetCol = board.find((c) => c.id === body.columnId);
           if (!targetCol) {
@@ -352,6 +362,9 @@ export const handlers = [
             ? users.find((u) => u.id === body.assigneeId)
             : null;
           updated.assigneeName = assignee?.name ?? null;
+        }
+        if (body.archived) {
+          updated.archived = true;
         }
         col.tasks[idx] = updated;
         col.tasks.sort((a, b) => a.order - b.order);
@@ -422,6 +435,10 @@ export const handlers = [
     const col = board.find((c) => c.id === body.columnId);
     if (!col) return HttpResponse.json({ message: "Column not found" }, { status: 404 });
     const assignee = body.assigneeId ? users.find((u) => u.id === body.assigneeId) : null;
+    const subtasks = body.subtasks?.length
+      ? mapCreateSubtasks(body.subtasks, Date.now())
+      : [];
+
     const newTask: Task = createBaseTask({
       id: `t-${Date.now()}`,
       kind: "project",
@@ -430,11 +447,12 @@ export const handlers = [
       columnId: body.columnId,
       title: body.title,
       description: body.description ?? "",
-      status: "todo",
+      status: statusFromColumnId(body.columnId),
       order: col.tasks.length,
       assigneeId: body.assigneeId ?? null,
       assigneeName: assignee?.name ?? null,
       storyPoints: body.storyPoints ?? null,
+      subtasks,
     });
     col.tasks.push(newTask);
     return HttpResponse.json(newTask, { status: 201 });

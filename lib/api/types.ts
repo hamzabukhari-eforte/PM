@@ -46,6 +46,18 @@ export type TaskKind = "project" | "miscellaneous" | "routine";
 
 export type RecurrenceInterval = "hour" | "day" | "week" | "month" | "year";
 
+/** Child work item on a Kanban main task. Links use stable ids, not display numbers. */
+export interface SubTask {
+  id: string;
+  title: string;
+  description: string;
+  order: number;
+  /** Main task id or another subtask id within the sprint. */
+  linkedTaskId: string | null;
+  completed: boolean;
+  subtasks?: SubTask[];
+}
+
 export interface Task {
   id: string;
   kind: TaskKind;
@@ -71,6 +83,10 @@ export interface Task {
   timelineStart?: string | null;
   /** Personal tasks — planned end of the work window. */
   timelineEnd?: string | null;
+  /** Project Kanban main tasks only. */
+  subtasks?: SubTask[];
+  /** When true, hidden from board/backlog views. */
+  archived?: boolean;
 }
 
 export interface BoardColumn {
@@ -208,6 +224,13 @@ export interface UpdateSprintInput {
   endDate?: string;
 }
 
+export interface CreateSubTaskInput {
+  title: string;
+  description?: string;
+  linkedTaskId?: string | null;
+  subtasks?: CreateSubTaskInput[];
+}
+
 export interface CreateTaskInput {
   title: string;
   description?: string;
@@ -216,6 +239,7 @@ export interface CreateTaskInput {
   storyPoints?: number | null;
   kind?: TaskKind;
   recurrenceInterval?: RecurrenceInterval;
+  subtasks?: CreateSubTaskInput[];
 }
 
 export interface CreatePersonalTaskInput {
@@ -238,6 +262,8 @@ export interface UpdateTaskInput {
   assigneeId?: string | null;
   storyPoints?: number | null;
   recurrenceInterval?: RecurrenceInterval;
+  subtasks?: SubTask[];
+  archived?: boolean;
 }
 
 export interface StandupInput {

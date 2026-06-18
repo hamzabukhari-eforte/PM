@@ -21,6 +21,10 @@ export function canManageSprints(role: Role | undefined): boolean {
   return isAdmin(role);
 }
 
+export function canArchiveTasks(role: Role | undefined): boolean {
+  return isAdmin(role);
+}
+
 export function canViewTeamStandups(role: Role | undefined): boolean {
   return isScrumMaster(role);
 }

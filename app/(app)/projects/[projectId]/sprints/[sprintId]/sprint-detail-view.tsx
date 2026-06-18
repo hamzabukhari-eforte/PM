@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppHeader } from "@/components/layout/app-header";
 import { AddTaskDialog } from "@/components/tasks/add-task-dialog";
 import type { CreateTaskFormData } from "@/components/tasks/create-task-form";
+import { formSubtasksToCreateInput } from "@/lib/utils/task-hierarchy";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -13,11 +14,12 @@ import { ErrorState } from "@/components/ui/error-state";
 import { EmptyState } from "@/components/ui/empty-state";
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
-import type { CreateTaskInput, Sprint, Task } from "@/lib/api/types";
+import type { Board, CreateTaskInput, Sprint, Task } from "@/lib/api/types";
 import {
   defaultTodoColumnId,
   useProjectMembers,
 } from "@/lib/hooks/use-project-members";
+import { buildLinkTargets } from "@/lib/utils/task-hierarchy";
 
 export function SprintDetailView() {
   const params = useParams<{ projectId: string; sprintId: string }>();
@@ -38,6 +40,14 @@ export function SprintDetailView() {
     queryFn: () => apiClient<Task[]>(endpoints.projects.backlog(projectId, sprintId)),
     enabled: !!projectId && !!sprintId,
   });
+
+  const boardQuery = useQuery({
+    queryKey: ["board", projectId, sprintId],
+    queryFn: () => apiClient<Board>(endpoints.projects.board(projectId, sprintId)),
+    enabled: !!projectId && !!sprintId,
+  });
+
+  const linkTargets = boardQuery.data ? buildLinkTargets(boardQuery.data) : [];
 
   const membersQuery = useProjectMembers(projectId);
 
@@ -61,6 +71,7 @@ export function SprintDetailView() {
       columnId: defaultTodoColumnId(sprintId),
       assigneeId: data.assigneeId ?? null,
       storyPoints: data.storyPoints ? Number(data.storyPoints) : null,
+      subtasks: data.subtasks?.length ? formSubtasksToCreateInput(data.subtasks) : undefined,
     });
   }
 
@@ -91,6 +102,7 @@ export function SprintDetailView() {
                 <h2 className="text-lg font-semibold">Backlog</h2>
                 <AddTaskDialog
                   members={membersQuery.data ?? []}
+                  linkTargets={linkTargets}
                   columnLabel="To Do"
                   onSubmit={handleCreateTask}
                   loading={createMutation.isPending}

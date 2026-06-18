@@ -213,8 +213,26 @@ export const boards: Record<string, BoardColumn[]> = {
     {
       ...defaultColumns("sprint-1a")[0],
       tasks: [
-        createProjectTask("t-1", "proj-1", "sprint-1a", "sprint-1a-col-todo", "JWT refresh flow", "todo", 0, "user-dev", "Dana Developer", 3),
-        createProjectTask("t-2", "proj-1", "sprint-1a", "sprint-1a-col-todo", "Role guard components", "todo", 1, "user-dev2", "Sam Smith", 2),
+        createProjectTask("t-1", "proj-1", "sprint-1a", "sprint-1a-col-todo", "JWT refresh flow", "todo", 0, "user-dev", "Dana Developer", 3, {
+          subtasks: [
+            { id: "st-1-1", title: "Task A", description: "Review token expiry handling in the auth middleware.", order: 0, linkedTaskId: null, completed: true, subtasks: [
+              { id: "st-1-1-1", title: "Inspect middleware chain", description: "Trace refresh token path through existing middleware.", order: 0, linkedTaskId: null, completed: true, subtasks: [] },
+              { id: "st-1-1-2", title: "Validate expiry edge cases", description: "Cover clock skew and near-expiry tokens.", order: 1, linkedTaskId: null, completed: false, subtasks: [
+                { id: "st-1-1-2-1", title: "Add skew tolerance test", description: "Simulate ±30s client clock drift.", order: 0, linkedTaskId: null, completed: false, subtasks: [] },
+              ] },
+            ] },
+            { id: "st-1-2", title: "Task B", description: "Coordinate with Role guard work — shared session edge cases.", order: 1, linkedTaskId: "st-2-4", completed: false, subtasks: [] },
+            { id: "st-1-3", title: "Task C", description: "Add integration tests for refresh rotation.", order: 2, linkedTaskId: null, completed: false, subtasks: [] },
+          ],
+        }),
+        createProjectTask("t-2", "proj-1", "sprint-1a", "sprint-1a-col-todo", "Role guard components", "todo", 1, "user-dev2", "Sam Smith", 2, {
+          subtasks: [
+            { id: "st-2-1", title: "Audit routes", description: "List all protected routes and current guard coverage.", order: 0, linkedTaskId: null, completed: false, subtasks: [] },
+            { id: "st-2-2", title: "Map roles", description: "Document admin vs developer permissions matrix.", order: 1, linkedTaskId: null, completed: false, subtasks: [] },
+            { id: "st-2-3", title: "Write guards", description: "Implement route-level guard components.", order: 2, linkedTaskId: null, completed: false, subtasks: [] },
+            { id: "st-2-4", title: "Task F", description: "Final verification pass for cross-task dependencies.", order: 3, linkedTaskId: null, completed: false, subtasks: [] },
+          ],
+        }),
       ],
     },
     {
@@ -335,6 +353,11 @@ export function cloneBoard(sprintId: string): BoardColumn[] {
   if (!board) return [];
   return board.map((col) => ({
     ...col,
-    tasks: col.tasks.map((t) => ({ ...t })),
+    tasks: col.tasks
+      .filter((t) => !t.archived)
+      .map((t) => ({
+        ...t,
+        subtasks: t.subtasks?.map((s) => ({ ...s })),
+      })),
   }));
 }

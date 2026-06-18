@@ -3,32 +3,54 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
-import type { BoardColumn, ProjectMember } from "@/lib/api/types";
+import type { BoardColumn, ProjectMember, Task } from "@/lib/api/types";
 import { KanbanCard } from "@/components/kanban/kanban-card";
 import { AddTaskDialog } from "@/components/tasks/add-task-dialog";
 import type { CreateTaskFormData } from "@/components/tasks/create-task-form";
 import { Button } from "@/components/ui/button";
+import {
+  collectSubtaskSortableIds,
+  type LinkTarget,
+  type TaskHierarchyEntry,
+} from "@/lib/utils/task-hierarchy";
 import { cn } from "@/lib/utils";
 
 export function KanbanColumn({
   column,
   members,
+  linkTargets,
+  hierarchyIndex,
   onCreateTask,
+  onEditTask,
+  onOpenTask,
+  onArchiveTask,
+  canArchive,
   creating,
 }: {
   column: BoardColumn;
   members: ProjectMember[];
+  linkTargets: LinkTarget[];
+  hierarchyIndex: Map<string, TaskHierarchyEntry>;
   onCreateTask: (columnId: string, data: CreateTaskFormData) => void;
+  onEditTask?: (task: Task) => void;
+  onOpenTask?: (task: Task) => void;
+  onArchiveTask?: (task: Task) => void;
+  canArchive?: boolean;
   creating?: boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
-  const taskIds = column.tasks.map((t) => t.id);
+
+  const sortedTasks = column.tasks.slice().sort((a, b) => a.order - b.order);
+  const sortableIds = sortedTasks.flatMap((task) => [
+    task.id,
+    ...collectSubtaskSortableIds(task),
+  ]);
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "flex w-[280px] shrink-0 flex-col rounded-2xl border border-slate-200/80 bg-slate-50/80",
+        "flex w-[26rem] min-w-[22rem] shrink-0 flex-col rounded-2xl border border-slate-200/80 bg-slate-50/80",
         isOver && "border-blue-200 bg-blue-50/40 ring-2 ring-blue-100",
       )}
     >
@@ -39,6 +61,7 @@ export function KanbanColumn({
         </div>
         <AddTaskDialog
           members={members}
+          linkTargets={linkTargets}
           columnLabel={column.name}
           onSubmit={(data) => onCreateTask(column.id, data)}
           loading={creating}
@@ -54,13 +77,19 @@ export function KanbanColumn({
           }
         />
       </div>
-      <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+      <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
         <div className="flex min-h-[120px] flex-col gap-2 p-3">
-          {column.tasks
-            .sort((a, b) => a.order - b.order)
-            .map((task) => (
-              <KanbanCard key={task.id} task={task} />
-            ))}
+          {sortedTasks.map((task) => (
+            <KanbanCard
+              key={task.id}
+              task={task}
+              hierarchyIndex={hierarchyIndex}
+              onOpen={onOpenTask}
+              onEdit={onEditTask}
+              onArchive={onArchiveTask}
+              canArchive={canArchive}
+            />
+          ))}
         </div>
       </SortableContext>
     </div>

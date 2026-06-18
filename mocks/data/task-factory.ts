@@ -1,10 +1,23 @@
-import type { RecurrenceInterval, Task, TaskKind, TaskStatus } from "@/lib/api/types";
+import type { CreateSubTaskInput, RecurrenceInterval, SubTask, Task, TaskKind, TaskStatus } from "@/lib/api/types";
+import { statusFromColumnId } from "@/lib/utils/task-status-flow";
 
-export function statusFromColumnId(columnId: string): TaskStatus {
-  if (columnId.includes("done")) return "done";
-  if (columnId.includes("progress")) return "in_progress";
-  if (columnId.includes("review")) return "review";
-  return "todo";
+export { statusFromColumnId };
+
+export function mapCreateSubtasks(
+  subs: CreateSubTaskInput[],
+  idSeed: number | string = Date.now(),
+): SubTask[] {
+  return subs.map((sub, index) => ({
+    id: `st-${idSeed}-${index}`,
+    title: sub.title,
+    description: sub.description ?? "",
+    order: index,
+    linkedTaskId: sub.linkedTaskId ?? null,
+    completed: false,
+    subtasks: sub.subtasks?.length
+      ? mapCreateSubtasks(sub.subtasks, `${idSeed}-${index}`)
+      : [],
+  }));
 }
 
 export function createBaseTask(
@@ -28,6 +41,8 @@ export function createBaseTask(
     nextReminderAt: null,
     timelineStart: null,
     timelineEnd: null,
+    subtasks: [],
+    archived: false,
     ...partial,
   };
 }
