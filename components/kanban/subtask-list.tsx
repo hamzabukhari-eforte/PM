@@ -1,6 +1,7 @@
 "use client";
 
-import { useSortable } from "@dnd-kit/sortable";
+import { useMemo } from "react";
+import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Link2 } from "lucide-react";
 import type { SubTask, Task } from "@/lib/api/types";
@@ -54,13 +55,10 @@ function SubtaskRow({
       >
         <button
           type="button"
-          data-no-card-open
           className="mt-0.5 shrink-0 cursor-grab touch-none rounded p-0.5 text-slate-300 hover:text-slate-500 active:cursor-grabbing"
           {...attributes}
           {...listeners}
           aria-label={`Reorder ${subtask.title}`}
-          onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
         >
           <GripVertical className="h-3.5 w-3.5" />
         </button>
@@ -100,20 +98,28 @@ function SubtaskTree({
   hierarchyIndex: Map<string, TaskHierarchyEntry>;
   depth: number;
 }) {
+  const items = sortedSubtaskList(subtasks);
+  const sortableIds = useMemo(
+    () => items.map((sub) => subtaskSortId(parentId, sub.id)),
+    [items, parentId],
+  );
+
   return (
-    <div
-      className={cn("space-y-1", depth > 0 && "ml-3 border-l border-slate-200 pl-2")}
-    >
-      {sortedSubtaskList(subtasks).map((sub) => (
-        <SubtaskRow
-          key={sub.id}
-          parentId={parentId}
-          subtask={sub}
-          hierarchyIndex={hierarchyIndex}
-          depth={depth}
-        />
-      ))}
-    </div>
+    <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+      <div
+        className={cn("space-y-1", depth > 0 && "ml-3 border-l border-slate-200 pl-2")}
+      >
+        {items.map((sub) => (
+          <SubtaskRow
+            key={sub.id}
+            parentId={parentId}
+            subtask={sub}
+            hierarchyIndex={hierarchyIndex}
+            depth={depth}
+          />
+        ))}
+      </div>
+    </SortableContext>
   );
 }
 

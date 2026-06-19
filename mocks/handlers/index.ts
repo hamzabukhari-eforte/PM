@@ -24,7 +24,7 @@ import type {
   VelocityPoint,
 } from "@/lib/api/types";
 import { normalizeStandupEntry, standupIncludesProject } from "@/lib/utils/standup";
-import { mergeTaskUpdate } from "../data/task-mutations";
+import { mergeTaskUpdate, repositionTaskInColumn } from "../data/task-mutations";
 import { createBaseTask, createPersonalTask, mapCreateSubtasks, statusFromColumnId } from "../data/task-factory";
 import { canMoveTaskToColumn } from "@/lib/utils/task-status-flow";
 import { dashboardAnalytics } from "../data/analytics";
@@ -332,6 +332,22 @@ export const handlers = [
         if (idx === -1) continue;
 
         const task = col.tasks[idx];
+
+        if (body.order !== undefined && (!body.columnId || body.columnId === col.id)) {
+          const updated = mergeTaskUpdate(task, body);
+          if (body.assigneeId !== undefined) {
+            const assignee = body.assigneeId
+              ? users.find((u) => u.id === body.assigneeId)
+              : null;
+            updated.assigneeName = assignee?.name ?? null;
+          }
+          if (body.archived) {
+            updated.archived = true;
+          }
+          col.tasks = repositionTaskInColumn(col.tasks, updated, body.order);
+          return HttpResponse.json(updated);
+        }
+
         if (body.columnId && body.columnId !== col.id) {
           if (!canMoveTaskToColumn(col.id, body.columnId)) {
             return HttpResponse.json(
@@ -343,16 +359,28 @@ export const handlers = [
             );
           }
           col.tasks.splice(idx, 1);
+          col.tasks.forEach((t, i) => {
+            t.order = i;
+          });
           const targetCol = board.find((c) => c.id === body.columnId);
           if (!targetCol) {
             return HttpResponse.json({ message: "Column not found" }, { status: 404 });
           }
           const updated = mergeTaskUpdate(
-            { ...task, columnId: body.columnId, order: body.order ?? targetCol.tasks.length },
+            { ...task, columnId: body.columnId },
             body,
           );
-          targetCol.tasks.push(updated);
-          targetCol.tasks.sort((a, b) => a.order - b.order);
+          if (body.assigneeId !== undefined) {
+            const assignee = body.assigneeId
+              ? users.find((u) => u.id === body.assigneeId)
+              : null;
+            updated.assigneeName = assignee?.name ?? null;
+          }
+          targetCol.tasks = repositionTaskInColumn(
+            targetCol.tasks,
+            updated,
+            body.order ?? targetCol.tasks.length,
+          );
           return HttpResponse.json(updated);
         }
 

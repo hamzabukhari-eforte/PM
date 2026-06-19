@@ -118,11 +118,10 @@ export function KanbanCard({
         <button
           type="button"
           ref={setActivatorNodeRef}
-          className="mt-0.5 shrink-0 cursor-grab touch-none rounded p-0.5 text-slate-300 opacity-0 transition-opacity hover:bg-slate-100 hover:text-slate-500 active:cursor-grabbing group-hover:opacity-100"
+          className="mt-0.5 shrink-0 cursor-grab touch-none rounded p-0.5 text-slate-300 transition-opacity hover:bg-slate-100 hover:text-slate-500 active:cursor-grabbing opacity-40 group-hover:opacity-100"
           {...attributes}
           {...listeners}
           aria-label="Drag task"
-          onClick={(e) => e.stopPropagation()}
         >
           <GripVertical className="h-4 w-4" />
         </button>

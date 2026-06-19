@@ -158,6 +158,71 @@ export function KanbanBoard({
     });
   }
 
+  function resolveMainTaskDropTarget(
+    overId: string,
+  ): { columnId: string; overTask: Task | null } | null {
+    const overSub = parseAnySubtaskSortId(overId);
+    if (overSub) {
+      const mainTaskId = findMainTaskIdForParent(board, overSub.parentId);
+      if (!mainTaskId) return null;
+      const found = findTask(mainTaskId);
+      if (!found) return null;
+      return { columnId: found.columnId, overTask: found.task };
+    }
+
+    const overTask = findTask(overId);
+    if (overTask) return { columnId: overTask.columnId, overTask: overTask.task };
+
+    const col = board.columns.find((c) => c.id === overId);
+    if (col) return { columnId: col.id, overTask: null };
+
+    return null;
+  }
+
+  function handleMainTaskDrag(activeId: string, overId: string) {
+    const activeFound = findTask(activeId);
+    if (!activeFound) return;
+
+    const dropTarget = resolveMainTaskDropTarget(overId);
+    if (!dropTarget) return;
+
+    const { columnId: targetColumnId, overTask } = dropTarget;
+
+    if (!canMoveTaskToColumn(activeFound.columnId, targetColumnId)) return;
+
+    const targetCol = board.columns.find((c) => c.id === targetColumnId);
+    if (!targetCol) return;
+
+    const sorted = targetCol.tasks.slice().sort((a, b) => a.order - b.order);
+    const oldIndex = sorted.findIndex((t) => t.id === activeId);
+
+    let newIndex: number;
+    if (overTask && overTask.id !== activeId) {
+      newIndex = sorted.findIndex((t) => t.id === overTask.id);
+    } else {
+      newIndex = Math.max(
+        0,
+        sorted.length - (activeFound.columnId === targetColumnId ? 1 : 0),
+      );
+    }
+
+    if (newIndex === -1) return;
+    if (activeFound.columnId === targetColumnId && oldIndex === newIndex) return;
+
+    if (activeFound.columnId === targetColumnId) {
+      updateMutation.mutate({
+        taskId: activeId,
+        body: { order: newIndex },
+      });
+      return;
+    }
+
+    updateMutation.mutate({
+      taskId: activeId,
+      body: { columnId: targetColumnId, order: newIndex },
+    });
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     setActiveTask(null);
     const { active, over } = event;
@@ -171,25 +236,7 @@ export function KanbanBoard({
       return;
     }
 
-    const activeFound = findTask(activeId);
-    if (!activeFound) return;
-
-    let targetColumnId = overId;
-    const overTask = findTask(overId);
-    if (overTask) targetColumnId = overTask.columnId;
-
-    const targetCol = board.columns.find((c) => c.id === targetColumnId);
-    if (!targetCol) return;
-    if (activeFound.columnId === targetColumnId && activeId === overId) return;
-
-    if (!canMoveTaskToColumn(activeFound.columnId, targetColumnId)) return;
-
-    const order = overTask ? overTask.task.order : targetCol.tasks.length;
-
-    updateMutation.mutate({
-      taskId: activeId,
-      body: { columnId: targetColumnId, order },
-    });
+    handleMainTaskDrag(activeId, overId);
   }
 
   function mapFormSubtasks(

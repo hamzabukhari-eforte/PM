@@ -38,3 +38,15 @@ export function mergeTaskUpdate(task: Task, body: UpdateTaskInput): Task {
 
   return updated;
 }
+
+/** Remove task from column list, insert at index, renumber orders. */
+export function repositionTaskInColumn(
+  tasks: Task[],
+  task: Task,
+  targetIndex: number,
+): Task[] {
+  const without = tasks.filter((t) => t.id !== task.id);
+  const insertAt = Math.max(0, Math.min(targetIndex, without.length));
+  without.splice(insertAt, 0, task);
+  return without.map((t, order) => ({ ...t, order }));
+}

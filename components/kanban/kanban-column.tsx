@@ -8,11 +8,7 @@ import { KanbanCard } from "@/components/kanban/kanban-card";
 import { AddTaskDialog } from "@/components/tasks/add-task-dialog";
 import type { CreateTaskFormData } from "@/components/tasks/create-task-form";
 import { Button } from "@/components/ui/button";
-import {
-  collectSubtaskSortableIds,
-  type LinkTarget,
-  type TaskHierarchyEntry,
-} from "@/lib/utils/task-hierarchy";
+import type { LinkTarget, TaskHierarchyEntry } from "@/lib/utils/task-hierarchy";
 import { cn } from "@/lib/utils";
 
 export function KanbanColumn({
@@ -41,10 +37,7 @@ export function KanbanColumn({
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
 
   const sortedTasks = column.tasks.slice().sort((a, b) => a.order - b.order);
-  const sortableIds = sortedTasks.flatMap((task) => [
-    task.id,
-    ...collectSubtaskSortableIds(task),
-  ]);
+  const sortableIds = sortedTasks.map((task) => task.id);
 
   return (
     <div
