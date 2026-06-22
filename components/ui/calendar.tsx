@@ -18,15 +18,15 @@ function CalendarDayButton({
     <button
       type="button"
       className={cn(
-        "inline-flex h-8 w-8 items-center justify-center rounded-md p-0 text-sm font-normal transition-colors",
+        "inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-md p-0 text-sm font-normal transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400",
         modifiers.disabled && "cursor-not-allowed opacity-50",
         modifiers.selected
-          ? "bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
-          : "hover:bg-blue-200 hover:text-blue-950",
+          ? "bg-indigo-600 text-white hover:bg-indigo-700 hover:text-white"
+          : "hover:bg-indigo-200 hover:text-indigo-950",
         modifiers.today &&
           !modifiers.selected &&
-          "bg-blue-50 font-medium text-blue-900 hover:bg-blue-200 hover:text-blue-950",
+          "bg-indigo-50 font-medium text-indigo-900 hover:bg-indigo-200 hover:text-indigo-950",
         className,
       )}
       {...props}
@@ -51,10 +51,10 @@ function Calendar({
         caption_label: "text-sm font-medium",
         nav: "flex items-center gap-1",
         button_previous: cn(
-          "absolute left-1 inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white p-0 opacity-80 hover:opacity-100",
+          "absolute left-1 inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white p-0 opacity-80 hover:opacity-100",
         ),
         button_next: cn(
-          "absolute right-1 inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white p-0 opacity-80 hover:opacity-100",
+          "absolute right-1 inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white p-0 opacity-80 hover:opacity-100",
         ),
         month_grid: "w-full border-collapse",
         weekdays: "flex",

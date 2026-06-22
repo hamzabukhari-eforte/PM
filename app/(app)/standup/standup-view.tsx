@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppHeader } from "@/components/layout/app-header";
+import { PageContent } from "@/components/layout/page-content";
 import { StandupForm } from "@/components/standup/standup-form";
 import { StandupHistory } from "@/components/standup/standup-history";
 import { TeamStandupPanel } from "@/components/standup/team-standup-panel";
@@ -79,7 +80,7 @@ export function StandupView() {
             : "Submit today's update and view your standup history."
         }
       />
-      <div className="mx-auto max-w-5xl space-y-8 p-6 lg:p-8">
+      <PageContent className="space-y-8">
         {scrumMaster && (
           <section>
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
@@ -158,7 +159,7 @@ export function StandupView() {
           {historyQuery.isLoading && <LoadingState />}
           {historyQuery.data && <StandupHistory entries={historyQuery.data} />}
         </section>
-      </div>
+      </PageContent>
     </>
   );
 }

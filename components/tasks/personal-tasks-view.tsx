@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw, CalendarRange } from "lucide-react";
 import { format } from "date-fns";
 import { AppHeader } from "@/components/layout/app-header";
+import { PageContent } from "@/components/layout/page-content";
 import { AddPersonalTaskDialog } from "@/components/tasks/add-personal-task-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,7 +46,7 @@ function PersonalTaskCard({
   const nextStatus = nextIdx < statusFlow.length ? statusFlow[nextIdx] : null;
 
   return (
-    <Card className="border-slate-200/80 shadow-none transition-shadow hover:shadow-sm">
+    <Card className="card-interactive h-full border-slate-200/80">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-3">
           <CardTitle className="text-base font-medium leading-snug">{task.title}</CardTitle>
@@ -68,7 +69,7 @@ function PersonalTaskCard({
             <span>{task.storyPoints} pts</span>
           )}
           {task.kind === "routine" && task.recurrenceInterval && (
-            <span className="flex items-center gap-1 text-blue-600">
+            <span className="flex items-center gap-1 text-indigo-600">
               <RefreshCw className="h-3 w-3" />
               {recurrenceLabels[task.recurrenceInterval]}
             </span>
@@ -128,7 +129,7 @@ function TaskListSection({
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <p className="max-w-xl text-sm text-slate-500">{description}</p>
+        <p className="text-sm text-slate-500">{description}</p>
         {isAdmin && (
           <AddPersonalTaskDialog
             kind={kind}
@@ -139,7 +140,7 @@ function TaskListSection({
         )}
       </div>
       {loading && <LoadingState />}
-      <div className={cn("grid gap-3", tasks?.length ? "" : "hidden")}>
+      <div className={cn("grid gap-4 md:grid-cols-2 xl:grid-cols-3", tasks?.length ? "" : "hidden")}>
         {tasks?.map((task) => (
           <PersonalTaskCard
             key={task.id}
@@ -220,14 +221,14 @@ export function TasksView() {
             : "Tasks assigned to you by your Scrum Master."
         }
       />
-      <div className="mx-auto max-w-4xl space-y-6 p-6 lg:p-8">
+      <PageContent>
         <Tabs defaultValue="miscellaneous">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList>
             <TabsTrigger value="miscellaneous">Miscellaneous</TabsTrigger>
             <TabsTrigger value="routine">Routine</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="miscellaneous" className="mt-6">
+          <TabsContent value="miscellaneous">
             <TaskListSection
               kind="miscellaneous"
               tasks={miscQuery.data}
@@ -241,7 +242,7 @@ export function TasksView() {
             />
           </TabsContent>
 
-          <TabsContent value="routine" className="mt-6">
+          <TabsContent value="routine">
             <TaskListSection
               kind="routine"
               tasks={routineQuery.data}
@@ -255,7 +256,7 @@ export function TasksView() {
             />
           </TabsContent>
         </Tabs>
-      </div>
+      </PageContent>
     </>
   );
 }

@@ -48,7 +48,7 @@ function ProjectTaskTimer({ task }: { task: Task }) {
       className={cn(
         "flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[10px] font-medium tabular-nums",
         isRunning
-          ? "bg-blue-50 text-blue-700"
+          ? "bg-indigo-50 text-indigo-700"
           : "bg-slate-100 text-slate-500",
       )}
       title={formatStopwatch(seconds)}

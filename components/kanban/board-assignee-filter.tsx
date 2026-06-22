@@ -36,7 +36,7 @@ export function BoardAssigneeFilter({
             className={cn(
               "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
               value === chip.id
-                ? "border-blue-200 bg-blue-50 text-blue-700"
+                ? "border-indigo-200 bg-indigo-50 text-indigo-700"
                 : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
             )}
           >

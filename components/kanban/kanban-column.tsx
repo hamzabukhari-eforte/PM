@@ -44,7 +44,7 @@ export function KanbanColumn({
       ref={setNodeRef}
       className={cn(
         "flex w-[26rem] min-w-[22rem] shrink-0 flex-col rounded-2xl border border-slate-200/80 bg-slate-50/80",
-        isOver && "border-blue-200 bg-blue-50/40 ring-2 ring-blue-100",
+        isOver && "border-indigo-200 bg-indigo-50/40 ring-2 ring-indigo-100",
       )}
     >
       <div className="flex items-start justify-between gap-2 border-b border-slate-200/60 px-4 py-3.5">
@@ -62,7 +62,7 @@ export function KanbanColumn({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 shrink-0 text-slate-500 hover:text-blue-600"
+              className="h-7 w-7 shrink-0 text-slate-500 hover:text-indigo-600"
               title={`Add task to ${column.name}`}
             >
               <Plus className="h-4 w-4" />

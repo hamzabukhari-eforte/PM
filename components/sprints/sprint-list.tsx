@@ -30,13 +30,13 @@ export function SprintList({
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {sprints.map((sprint) => (
-        <Card key={sprint.id}>
+        <Card key={sprint.id} className="card-interactive border-slate-200/80">
           <CardHeader className="flex flex-row items-start justify-between gap-2">
             <div>
-              <CardTitle className="text-base">
+              <CardTitle className="text-lg">
                 <Link
                   href={`/projects/${projectId}/sprints/${sprint.id}/`}
-                  className="hover:underline"
+                  className="transition-colors hover:text-primary"
                 >
                   {sprint.name}
                 </Link>
@@ -45,16 +45,17 @@ export function SprintList({
             </div>
             <Badge variant={statusVariant[sprint.status]}>{sprint.status}</Badge>
           </CardHeader>
-          <CardContent className="flex items-center justify-between">
+          <CardContent className="flex items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">
               {sprint.startDate} → {sprint.endDate}
             </p>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/projects/${projectId}/sprints/${sprint.id}/board/`}>
-                  Board
-                </Link>
-              </Button>
+              <Link
+                href={`/projects/${projectId}/sprints/${sprint.id}/board/`}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-3 text-xs font-semibold text-white shadow-sm shadow-indigo-500/20 transition-all duration-200 hover:brightness-110 hover:shadow-md active:scale-[0.98]"
+              >
+                Open board
+              </Link>
               {canManage && sprint.status === "active" && (
                 <Button variant="ghost" size="sm" onClick={() => onClose(sprint.id)}>
                   Close

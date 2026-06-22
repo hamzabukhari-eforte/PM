@@ -18,6 +18,7 @@ import { endpoints } from "@/lib/api/endpoints";
 import { KanbanColumn } from "@/components/kanban/kanban-column";
 import { KanbanCard } from "@/components/kanban/kanban-card";
 import { TaskDetailSheet } from "@/components/kanban/task-detail-sheet";
+import { TaskFollowupSheet } from "@/components/followup/task-followup-sheet";
 import {
   BoardAssigneeFilter,
   matchesAssigneeFilter,
@@ -58,6 +59,7 @@ export function KanbanBoard({
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [followupTask, setFollowupTask] = useState<Task | null>(null);
   const [togglingSubtaskId, setTogglingSubtaskId] = useState<string | null>(null);
   const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>("all");
 
@@ -363,8 +365,19 @@ export function KanbanBoard({
           }}
           hierarchyIndex={hierarchyIndex}
           onEdit={setEditingTask}
+          onFollowup={(task) => {
+            setFollowupTask(task);
+          }}
           onToggleSubtask={handleToggleSubtask}
           togglingSubtaskId={togglingSubtaskId}
+        />
+
+        <TaskFollowupSheet
+          task={followupTask}
+          open={!!followupTask}
+          onOpenChange={(open) => {
+            if (!open) setFollowupTask(null);
+          }}
         />
       </DndContext>
 

@@ -37,7 +37,7 @@ export const dashboardAnalytics: DashboardAnalytics = {
     },
   ],
   statusDistribution: [
-    { name: "Active", value: 6, color: "#2563EB" },
+    { name: "Active", value: 6, color: "#6366F1" },
     { name: "On Track", value: 8, color: "#10B981" },
     { name: "In Progress", value: 5, color: "#F59E0B" },
     { name: "On Hold", value: 3, color: "#EAB308" },

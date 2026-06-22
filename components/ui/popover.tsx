@@ -93,6 +93,7 @@ export function PopoverTrigger({
       ref={triggerRef as React.Ref<HTMLButtonElement>}
       type="button"
       aria-expanded={open}
+      className="cursor-pointer"
       onClick={handleClick}
     >
       {children}

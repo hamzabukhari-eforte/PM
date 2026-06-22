@@ -75,10 +75,6 @@ function SubtaskFieldRow({
   onRemove: () => void;
 }) {
   const childPath = `${path}.subtasks`;
-  const { append: appendChild } = useFieldArray({
-    control,
-    name: childPath as "subtasks",
-  });
 
   const titlePath = `${path}.title` as const;
   const idPath = `${path}.id` as const;
@@ -137,18 +133,6 @@ function SubtaskFieldRow({
               </Select>
             )}
           />
-          <div className="flex flex-wrap gap-2 pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-7 gap-1 text-xs"
-              onClick={() => appendChild({ title: "", description: "", subtasks: [] })}
-            >
-              <Plus className="h-3 w-3" />
-              Add child
-            </Button>
-          </div>
           <SubtaskFieldList
             path={childPath}
             depth={depth + 1}

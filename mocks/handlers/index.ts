@@ -18,10 +18,17 @@ import type {
   TeamStandupOverview,
   Task,
   UpdateProjectInput,
+  UpdateProjectPlanInput,
   UpdateSprintInput,
   UpdateTaskInput,
+  TaskFollowupContext,
+  TaskFollowupEntry,
+  TaskFollowupInput,
   User,
   VelocityPoint,
+  ProjectPlan,
+  ProjectLookups,
+  ProjectReportsSummary,
 } from "@/lib/api/types";
 import { normalizeStandupEntry, standupIncludesProject } from "@/lib/utils/standup";
 import { mergeTaskUpdate, repositionTaskInColumn } from "../data/task-mutations";
@@ -42,6 +49,9 @@ import {
   upsertStandupEntry,
   users,
 } from "../data/seed";
+import { departmentalPocs, projectLookups } from "../data/lookups";
+import { clonePlan, projectPlans, taskFollowups } from "../data/project-plans";
+import { buildProjectReportsSummary } from "../data/project-reports";
 
 function getUserFromToken(request: Request): User | null {
   const auth = request.headers.get("Authorization");
@@ -150,6 +160,22 @@ export const handlers = [
       createdAt: new Date().toISOString(),
       memberCount: 1,
       activeSprintCount: 0,
+      projectCode: body.projectCode ?? `PRJ-${Date.now().toString().slice(-6)}`,
+      brdReceivingDate: body.brdReceivingDate ?? null,
+      projectTypeId: body.projectTypeId ?? null,
+      startDate: body.startDate ?? null,
+      endDate: body.endDate ?? null,
+      categoryId: body.categoryId ?? null,
+      initiatedById: body.initiatedById ?? null,
+      departmentalPocId: body.departmentalPocId ?? null,
+      partnerIds: body.partnerIds ?? [],
+      projectStatusId: body.projectStatusId ?? null,
+      projectManagerId: body.projectManagerId ?? null,
+      priorityId: body.priorityId ?? null,
+      projectAction: body.projectAction ?? null,
+      assignToId: body.assignToId ?? null,
+      taskTemplateId: body.taskTemplateId ?? null,
+      isDraft: body.isDraft ?? false,
     };
     projects.push(project);
     projectMembers[id] = [
@@ -178,7 +204,129 @@ export const handlers = [
     if (body.name !== undefined) project.name = body.name;
     if (body.description !== undefined) project.description = body.description;
     if (body.archived !== undefined) project.archived = body.archived;
+    if (body.projectCode !== undefined) project.projectCode = body.projectCode;
+    if (body.brdReceivingDate !== undefined) project.brdReceivingDate = body.brdReceivingDate;
+    if (body.projectTypeId !== undefined) project.projectTypeId = body.projectTypeId;
+    if (body.startDate !== undefined) project.startDate = body.startDate;
+    if (body.endDate !== undefined) project.endDate = body.endDate;
+    if (body.categoryId !== undefined) project.categoryId = body.categoryId;
+    if (body.initiatedById !== undefined) project.initiatedById = body.initiatedById;
+    if (body.departmentalPocId !== undefined) project.departmentalPocId = body.departmentalPocId;
+    if (body.partnerIds !== undefined) project.partnerIds = body.partnerIds;
+    if (body.projectStatusId !== undefined) project.projectStatusId = body.projectStatusId;
+    if (body.projectManagerId !== undefined) project.projectManagerId = body.projectManagerId;
+    if (body.priorityId !== undefined) project.priorityId = body.priorityId;
+    if (body.projectAction !== undefined) project.projectAction = body.projectAction;
+    if (body.assignToId !== undefined) project.assignToId = body.assignToId;
+    if (body.taskTemplateId !== undefined) project.taskTemplateId = body.taskTemplateId;
+    if (body.isDraft !== undefined) project.isDraft = body.isDraft;
     return HttpResponse.json(project);
+  }),
+
+  http.get(apiPath("lookups/project"), ({ request }) => {
+    const user = requireAuth(request);
+    if (user instanceof Response) return user;
+    return HttpResponse.json(projectLookups satisfies ProjectLookups);
+  }),
+
+  http.get(apiPath("lookups/departmental-pocs"), ({ request }) => {
+    const user = requireAuth(request);
+    if (user instanceof Response) return user;
+    const url = new URL(request.url);
+    const initiatedById = url.searchParams.get("initiatedById") ?? "";
+    return HttpResponse.json(departmentalPocs[initiatedById] ?? []);
+  }),
+
+  http.get(apiPath("projects/:id/plan"), ({ request, params }) => {
+    const user = requireAuth(request);
+    if (user instanceof Response) return user;
+    const plan = clonePlan(params.id as string);
+    if (!plan) {
+      const empty: ProjectPlan = {
+        projectId: params.id as string,
+        allowSubtaskCreation: false,
+        nodes: [],
+      };
+      return HttpResponse.json(empty);
+    }
+    return HttpResponse.json(plan);
+  }),
+
+  http.put(apiPath("projects/:id/plan"), async ({ request, params }) => {
+    const user = requireAuth(request);
+    if (user instanceof Response) return user;
+    if (user.role !== "admin") {
+      return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+    const body = (await request.json()) as UpdateProjectPlanInput;
+    const projectId = params.id as string;
+    const existing = projectPlans[projectId] ?? {
+      projectId,
+      allowSubtaskCreation: false,
+      nodes: [],
+    };
+    const updated: ProjectPlan = {
+      ...existing,
+      allowSubtaskCreation: body.allowSubtaskCreation ?? existing.allowSubtaskCreation,
+      nodes: body.nodes ?? existing.nodes,
+    };
+    projectPlans[projectId] = updated;
+    return HttpResponse.json(updated);
+  }),
+
+  http.get(apiPath("tasks/:taskId/followup"), ({ request, params }) => {
+    const user = requireAuth(request);
+    if (user instanceof Response) return user;
+    const taskId = params.taskId as string;
+    const task = getAllTasks().find((t) => t.id === taskId);
+    if (!task) return HttpResponse.json({ message: "Task not found" }, { status: 404 });
+    const projectName = task.projectId
+      ? projects.find((p) => p.id === task.projectId)?.name ?? null
+      : null;
+    const history = taskFollowups[taskId] ?? [];
+    const ctx: TaskFollowupContext = {
+      task,
+      projectName,
+      assignByName: "Alex Chen",
+      formFields: [
+        {
+          id: "qa_passed",
+          label: "QA checklist passed",
+          type: "select",
+          options: [
+            { id: "yes", label: "Yes" },
+            { id: "no", label: "No" },
+            { id: "na", label: "N/A" },
+          ],
+        },
+        {
+          id: "blockers",
+          label: "Blockers noted",
+          type: "textarea",
+        },
+      ],
+      latestFollowup: history[history.length - 1] ?? null,
+    };
+    return HttpResponse.json(ctx);
+  }),
+
+  http.post(apiPath("tasks/:taskId/followup"), async ({ request, params }) => {
+    const user = requireAuth(request);
+    if (user instanceof Response) return user;
+    const taskId = params.taskId as string;
+    const task = getAllTasks().find((t) => t.id === taskId);
+    if (!task) return HttpResponse.json({ message: "Task not found" }, { status: 404 });
+    const body = (await request.json()) as TaskFollowupInput;
+    const entry: TaskFollowupEntry = {
+      id: `fu-${Date.now()}`,
+      taskId,
+      ...body,
+      submittedAt: new Date().toISOString(),
+      submittedByName: user.name,
+    };
+    if (!taskFollowups[taskId]) taskFollowups[taskId] = [];
+    taskFollowups[taskId].push(entry);
+    return HttpResponse.json(entry, { status: 201 });
   }),
 
   http.get(apiPath("projects/:id/members"), ({ request, params }) => {
@@ -610,6 +758,18 @@ export const handlers = [
       result = result.filter((s) => standupIncludesProject(s, projectId));
     }
     return HttpResponse.json(result.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)));
+  }),
+
+  http.get(apiPath("projects/:id/reports/summary"), ({ request, params }) => {
+    const user = requireAuth(request);
+    if (user instanceof Response) return user;
+    const url = new URL(request.url);
+    const sprintId = url.searchParams.get("sprintId") ?? undefined;
+    const summary = buildProjectReportsSummary(params.id as string, sprintId);
+    if (!summary) {
+      return HttpResponse.json({ message: "Project not found" }, { status: 404 });
+    }
+    return HttpResponse.json(summary);
   }),
 
   http.get(apiPath("projects/:id/reports/burndown"), ({ request, params }) => {

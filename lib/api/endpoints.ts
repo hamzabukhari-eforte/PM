@@ -14,6 +14,7 @@ export const endpoints = {
   projects: {
     list: apiPath("projects"),
     detail: (id: string) => apiPath(`projects/${id}`),
+    plan: (id: string) => apiPath(`projects/${id}/plan`),
     members: (id: string) => apiPath(`projects/${id}/members`),
     invite: (id: string) => apiPath(`projects/${id}/invites`),
     member: (projectId: string, userId: string) =>
@@ -33,12 +34,23 @@ export const endpoints = {
         apiPath(`projects/${id}/reports/burndown`, `sprintId=${sprintId}`),
       velocity: (id: string) => apiPath(`projects/${id}/reports/velocity`),
       standups: (id: string) => apiPath(`projects/${id}/reports/standups`),
+      summary: (id: string, sprintId?: string) =>
+        apiPath(
+          `projects/${id}/reports/summary`,
+          sprintId ? `sprintId=${sprintId}` : undefined,
+        ),
     },
   },
   tasks: {
     update: (id: string) => apiPath(`tasks/${id}`),
     personal: (kind?: "miscellaneous" | "routine") =>
       apiPath("tasks/personal", kind ? `kind=${kind}` : undefined),
+    followup: (id: string) => apiPath(`tasks/${id}/followup`),
+  },
+  lookups: {
+    project: apiPath("lookups/project"),
+    departmentalPocs: (initiatedById: string) =>
+      apiPath(`lookups/departmental-pocs`, `initiatedById=${initiatedById}`),
   },
   standup: {
     window: apiPath("standup/window"),

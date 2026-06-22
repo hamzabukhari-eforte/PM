@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppHeader } from "@/components/layout/app-header";
+import { PageContent } from "@/components/layout/page-content";
 import { ProjectCard } from "@/components/projects/project-card";
 import { RoleGuard } from "@/components/auth/role-guard";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,7 @@ export default function ProjectsPage() {
   return (
     <>
       <AppHeader title="Projects" />
-      <div className="space-y-6 p-6 lg:p-8">
+      <PageContent>
         <div className="flex justify-end">
           <RoleGuard roles={["admin"]}>
             <Button asChild>
@@ -75,7 +76,7 @@ export default function ProjectsPage() {
             />
           ))}
         </div>
-      </div>
+      </PageContent>
     </>
   );
 }

@@ -65,14 +65,14 @@ export default function DashboardPage() {
   const analytics: DashboardAnalytics = data?.analytics ?? dashboardAnalytics;
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <header className="border-b border-slate-200 bg-white px-6 py-6 lg:px-8">
+    <div className="min-h-screen">
+      <header className="relative w-full border-b border-indigo-100/80 bg-white/80 px-6 py-6 backdrop-blur-md lg:px-8 xl:px-10 page-enter">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
               Project Analytics
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-[15px] text-muted-foreground">
               Comprehensive overview of all active projects
             </p>
           </div>
@@ -95,7 +95,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <div className="space-y-6 p-6 lg:p-8">
+      <div className="page-enter w-full space-y-6 p-6 lg:px-8 lg:py-8 xl:px-10">
         {needsStandup && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <p className="font-medium">Daily standup required</p>
@@ -124,7 +124,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid gap-4 lg:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
                 <h2 className="text-base font-semibold text-slate-900">
                   Project Status Distribution
                 </h2>
@@ -135,7 +135,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
                 <h2 className="text-base font-semibold text-slate-900">
                   Monthly Project Completion
                 </h2>
@@ -149,7 +149,7 @@ export default function DashboardPage() {
             <section>
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <FolderKanban className="h-5 w-5 text-blue-600" />
+                  <FolderKanban className="h-5 w-5 text-indigo-600" />
                   <h2 className="text-base font-semibold text-slate-900">Active Projects</h2>
                 </div>
                 <div className="flex items-center gap-2">
@@ -161,7 +161,7 @@ export default function DashboardPage() {
                     <Calendar className="h-3.5 w-3.5" />
                     Due Date
                   </Button>
-                  <Button variant="ghost" size="sm" className="text-blue-600" asChild>
+                  <Button variant="ghost" size="sm" className="text-indigo-600" asChild>
                     <Link href="/projects/">View all</Link>
                   </Button>
                 </div>
@@ -182,7 +182,7 @@ export default function DashboardPage() {
                       Scrum Master view — daily responses from your team
                     </p>
                   </div>
-                  <Button variant="ghost" size="sm" className="text-blue-600" asChild>
+                  <Button variant="ghost" size="sm" className="text-indigo-600" asChild>
                     <Link href="/standup/">View all</Link>
                   </Button>
                 </div>

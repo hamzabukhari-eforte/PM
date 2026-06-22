@@ -13,8 +13,8 @@ export const statusStyles: Record<
   { badge: string; bar: string }
 > = {
   active: {
-    badge: "bg-blue-50 text-blue-700 border-blue-100",
-    bar: "bg-blue-500",
+    badge: "bg-indigo-50 text-indigo-700 border-indigo-100",
+    bar: "bg-indigo-500",
   },
   on_track: {
     badge: "bg-emerald-50 text-emerald-700 border-emerald-100",
@@ -36,8 +36,8 @@ export const statusStyles: Record<
 
 export const kpiToneStyles = {
   blue: {
-    icon: "bg-blue-50 text-blue-600",
-    badge: "bg-blue-50 text-blue-700 border-blue-100",
+    icon: "bg-indigo-50 text-indigo-600",
+    badge: "bg-indigo-50 text-indigo-700 border-indigo-100",
   },
   green: {
     icon: "bg-emerald-50 text-emerald-600",

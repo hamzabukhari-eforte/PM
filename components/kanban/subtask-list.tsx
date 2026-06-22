@@ -68,7 +68,7 @@ function SubtaskRow({
             {subtask.title}
           </p>
           {linkLabel && (
-            <p className="mt-0.5 flex items-center gap-1 text-[10px] text-blue-600">
+            <p className="mt-0.5 flex items-center gap-1 text-[10px] text-indigo-600">
               <Link2 className="h-3 w-3 shrink-0" />
               <span className="truncate">→ {linkLabel}</span>
             </p>

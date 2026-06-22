@@ -28,7 +28,7 @@ export function VelocityChart({ data }: { data: VelocityPoint[] }) {
           <Tooltip />
           <Legend />
           <Bar dataKey="committed" fill="#94a3b8" name="Committed" />
-          <Bar dataKey="completed" fill="#2563eb" name="Completed" />
+          <Bar dataKey="completed" fill="#6366f1" name="Completed" />
         </BarChart>
       </ResponsiveContainer>
     </div>

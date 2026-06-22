@@ -28,7 +28,7 @@ export function BurndownChart({ data }: { data: BurndownPoint[] }) {
           <Tooltip />
           <Legend />
           <Line type="monotone" dataKey="ideal" stroke="#94a3b8" strokeDasharray="5 5" name="Ideal" />
-          <Line type="monotone" dataKey="actual" stroke="#2563eb" name="Actual" />
+          <Line type="monotone" dataKey="actual" stroke="#6366f1" name="Actual" />
         </LineChart>
       </ResponsiveContainer>
     </div>

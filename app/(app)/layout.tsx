@@ -8,9 +8,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
       <StandupProvider>
-        <div className="min-h-screen bg-background">
+        <div className="app-shell-bg min-h-screen">
           <Sidebar />
-          <main className="lg:pl-60">{children}</main>
+          <main className="min-w-0 flex-1 transition-[padding] duration-300 lg:pl-64">{children}</main>
         </div>
       </StandupProvider>
     </AuthGuard>

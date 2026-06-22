@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Clock, GripVertical, Link2, Pencil } from "lucide-react";
+import { Clock, GripVertical, Link2, Pencil, ClipboardList } from "lucide-react";
 import type { SubTask, Task } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,7 @@ function DetailTimer({ task }: { task: Task }) {
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-md px-2 py-1 font-mono text-xs tabular-nums",
-        isRunning ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-600",
+        isRunning ? "bg-indigo-50 text-indigo-700" : "bg-slate-100 text-slate-600",
       )}
       title={formatStopwatch(seconds)}
     >
@@ -136,7 +136,7 @@ function DetailSubtaskRow({
               disabled={!onToggleSubtask || isToggling}
               onChange={(e) => onToggleSubtask?.(sub.id, e.target.checked)}
               onPointerDown={(e) => e.stopPropagation()}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-50"
               aria-label={`Mark ${sub.title} as ${sub.completed ? "incomplete" : "complete"}`}
             />
             <div className="min-w-0 flex-1">
@@ -144,7 +144,7 @@ function DetailSubtaskRow({
                 <span
                   className={cn(
                     "mt-0.5 shrink-0 font-mono text-xs font-semibold",
-                    sub.completed ? "text-slate-400" : "text-blue-600",
+                    sub.completed ? "text-slate-400" : "text-indigo-600",
                   )}
                 >
                   {hierarchyLabel}
@@ -172,7 +172,7 @@ function DetailSubtaskRow({
                 <p
                   className={cn(
                     "mt-2 flex items-center gap-1.5 text-xs",
-                    sub.completed ? "text-slate-400" : "text-blue-600",
+                    sub.completed ? "text-slate-400" : "text-indigo-600",
                   )}
                 >
                   <Link2 className="h-3.5 w-3.5 shrink-0" />
@@ -284,6 +284,7 @@ export function TaskDetailSheet({
   onOpenChange,
   hierarchyIndex,
   onEdit,
+  onFollowup,
   onToggleSubtask,
   togglingSubtaskId,
 }: {
@@ -292,6 +293,7 @@ export function TaskDetailSheet({
   onOpenChange: (open: boolean) => void;
   hierarchyIndex: Map<string, TaskHierarchyEntry>;
   onEdit?: (task: Task) => void;
+  onFollowup?: (task: Task) => void;
   onToggleSubtask?: (subtaskId: string, completed: boolean) => void;
   togglingSubtaskId?: string | null;
 }) {
@@ -349,20 +351,33 @@ export function TaskDetailSheet({
           />
         </SheetBody>
 
-        {onEdit && (
-          <SheetFooter>
-            <Button
-              type="button"
-              variant="outline"
-              className="gap-1.5"
-              onClick={() => {
-                onEdit(task);
-                onOpenChange(false);
-              }}
-            >
-              <Pencil className="h-4 w-4" />
-              Edit task
-            </Button>
+        {(onEdit || onFollowup) && (
+          <SheetFooter className="gap-2 sm:justify-end">
+            {onFollowup && (
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => onFollowup(task)}
+              >
+                <ClipboardList className="h-4 w-4" />
+                Task follow-up
+              </Button>
+            )}
+            {onEdit && (
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => {
+                  onEdit(task);
+                  onOpenChange(false);
+                }}
+              >
+                <Pencil className="h-4 w-4" />
+                Edit task
+              </Button>
+            )}
           </SheetFooter>
         )}
       </SheetContent>

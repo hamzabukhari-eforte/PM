@@ -45,7 +45,7 @@ export function MonthlyCompletionChart({ data }: { data: MonthlyCompletionPoint[
               backgroundColor: "#fff",
             }}
           />
-          <Bar dataKey="count" fill="#2563EB" radius={[6, 6, 0, 0]} name="Completed" />
+          <Bar dataKey="count" fill="#6366f1" radius={[6, 6, 0, 0]} name="Completed" />
         </BarChart>
       </ResponsiveContainer>
     </div>

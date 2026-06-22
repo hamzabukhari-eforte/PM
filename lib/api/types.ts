@@ -15,12 +15,32 @@ export interface AuthResponse {
 
 export interface Project {
   id: string;
+  /** Maps to legacy ProjectTitle. */
   name: string;
+  /** Maps to legacy pDescription / high-level scope. */
   description: string;
   archived: boolean;
   createdAt: string;
   memberCount: number;
   activeSprintCount: number;
+  /** Legacy ProjectCode — auto-generated when saved. */
+  projectCode?: string | null;
+  brdReceivingDate?: string | null;
+  projectTypeId?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  categoryId?: string | null;
+  initiatedById?: string | null;
+  departmentalPocId?: string | null;
+  partnerIds?: string[];
+  projectStatusId?: string | null;
+  projectManagerId?: string | null;
+  priorityId?: string | null;
+  /** hold | assigned — legacy ProjectAction. */
+  projectAction?: "hold" | "assigned" | null;
+  assignToId?: string | null;
+  taskTemplateId?: string | null;
+  isDraft?: boolean;
 }
 
 export interface ProjectMember {
@@ -85,6 +105,8 @@ export interface Task {
   timelineEnd?: string | null;
   /** Project Kanban main tasks only. */
   subtasks?: SubTask[];
+  /** Optional link to project plan WBS node. */
+  planTaskId?: string | null;
   /** When true, hidden from board/backlog views. */
   archived?: boolean;
 }
@@ -197,15 +219,134 @@ export interface VelocityPoint {
   committed: number;
 }
 
+export interface ProjectReportKpi {
+  id: string;
+  label: string;
+  value: string;
+  subtext?: string;
+  tone: "blue" | "green" | "orange" | "red" | "slate" | "violet";
+}
+
+export interface AssigneeWorkloadPoint {
+  name: string;
+  totalTasks: number;
+  doneTasks: number;
+  storyPoints: number;
+  donePoints: number;
+}
+
+export interface CumulativeFlowPoint {
+  date: string;
+  todo: number;
+  inProgress: number;
+  review: number;
+  done: number;
+}
+
+export interface SprintHealthPoint {
+  sprintId: string;
+  sprintName: string;
+  status: Sprint["status"];
+  progressPercent: number;
+  tasksDone: number;
+  tasksTotal: number;
+  storyPointsDone: number;
+  storyPointsTotal: number;
+}
+
+export interface MilestoneProgressPoint {
+  code: string;
+  title: string;
+  percent: number;
+  isMilestone: boolean;
+  dueDate: string | null;
+}
+
+export interface StandupParticipationPoint {
+  day: string;
+  submitted: number;
+  expected: number;
+}
+
+export interface TimeInStatusPoint {
+  status: TaskStatus;
+  label: string;
+  avgHours: number;
+}
+
+export interface RiskIndicator {
+  id: string;
+  severity: "low" | "medium" | "high";
+  title: string;
+  detail: string;
+}
+
+export interface ProjectReportsSummary {
+  projectId: string;
+  projectName: string;
+  generatedAt: string;
+  kpis: ProjectReportKpi[];
+  taskStatusDistribution: StatusDistributionPoint[];
+  storyPointsByStatus: StatusDistributionPoint[];
+  assigneeWorkload: AssigneeWorkloadPoint[];
+  cumulativeFlow: CumulativeFlowPoint[];
+  sprintHealth: SprintHealthPoint[];
+  velocity: VelocityPoint[];
+  burndown: BurndownPoint[];
+  milestones: MilestoneProgressPoint[];
+  standupParticipation: StandupParticipationPoint[];
+  timeInStatus: TimeInStatusPoint[];
+  risks: RiskIndicator[];
+  planSummary: {
+    wbsNodes: number;
+    milestones: number;
+    boardTasks: number;
+    subtasksTotal: number;
+    subtasksCompleted: number;
+  };
+}
+
 export interface CreateProjectInput {
   name: string;
   description: string;
+  projectCode?: string | null;
+  brdReceivingDate?: string | null;
+  projectTypeId?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  categoryId?: string | null;
+  initiatedById?: string | null;
+  departmentalPocId?: string | null;
+  partnerIds?: string[];
+  projectStatusId?: string | null;
+  projectManagerId?: string | null;
+  priorityId?: string | null;
+  projectAction?: "hold" | "assigned" | null;
+  assignToId?: string | null;
+  taskTemplateId?: string | null;
+  isDraft?: boolean;
 }
 
 export interface UpdateProjectInput {
   name?: string;
   description?: string;
   archived?: boolean;
+  projectCode?: string | null;
+  brdReceivingDate?: string | null;
+  projectTypeId?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  categoryId?: string | null;
+  initiatedById?: string | null;
+  departmentalPocId?: string | null;
+  partnerIds?: string[];
+  projectStatusId?: string | null;
+  projectManagerId?: string | null;
+  priorityId?: string | null;
+  projectAction?: "hold" | "assigned" | null;
+  assignToId?: string | null;
+  taskTemplateId?: string | null;
+  isDraft?: boolean;
 }
 
 export interface CreateSprintInput {
@@ -291,4 +432,106 @@ export interface TeamStandupOverview {
 export interface InviteInput {
   email: string;
   role: Role;
+}
+
+export interface LookupOption {
+  id: string;
+  label: string;
+}
+
+export interface ProjectLookups {
+  projectTypes: LookupOption[];
+  categories: LookupOption[];
+  priorities: LookupOption[];
+  projectStatuses: LookupOption[];
+  projectActions: LookupOption[];
+  initiatedBy: LookupOption[];
+  taskStatuses: LookupOption[];
+  completionPercents: LookupOption[];
+  taskTemplates: LookupOption[];
+  forms: LookupOption[];
+}
+
+export type PlanNodeKind = "project" | "task" | "subtask";
+
+/** WBS node in the project plan (legacy Project Schedule). */
+export interface PlanTask {
+  id: string;
+  code: string;
+  title: string;
+  description: string;
+  kind: PlanNodeKind;
+  order: number;
+  assigneeId: string | null;
+  memberIds: string[];
+  timelineStart: string | null;
+  timelineEnd: string | null;
+  isDependent: boolean;
+  dependentTaskCode: string | null;
+  isMilestone: boolean;
+  milestoneNo: string | null;
+  milestoneDescription: string | null;
+  subtasks?: PlanTask[];
+}
+
+export interface ProjectPlan {
+  projectId: string;
+  allowSubtaskCreation: boolean;
+  nodes: PlanTask[];
+}
+
+export interface PlanTaskInput {
+  title: string;
+  description?: string;
+  assigneeId?: string | null;
+  memberIds?: string[];
+  timelineStart?: string | null;
+  timelineEnd?: string | null;
+  isDependent?: boolean;
+  dependentTaskCode?: string | null;
+  isMilestone?: boolean;
+  milestoneNo?: string | null;
+  milestoneDescription?: string | null;
+  parentId?: string | null;
+  subtasks?: PlanTaskInput[];
+}
+
+export interface UpdateProjectPlanInput {
+  allowSubtaskCreation?: boolean;
+  nodes?: PlanTask[];
+}
+
+export interface TaskFollowupInput {
+  followupStart: string;
+  followupEnd: string;
+  details: string;
+  completionPercent: number;
+  taskStatusId: string;
+  documentTitle?: string;
+  reopenTask?: boolean;
+  criticalTask?: boolean;
+  customFormValues?: Record<string, string>;
+}
+
+export interface TaskFollowupEntry extends TaskFollowupInput {
+  id: string;
+  taskId: string;
+  submittedAt: string;
+  submittedByName: string;
+}
+
+export interface FollowupFormField {
+  id: string;
+  label: string;
+  type: "text" | "textarea" | "number" | "select";
+  required?: boolean;
+  options?: LookupOption[];
+}
+
+export interface TaskFollowupContext {
+  task: Task;
+  projectName: string | null;
+  assignByName: string | null;
+  formFields: FollowupFormField[];
+  latestFollowup: TaskFollowupEntry | null;
 }

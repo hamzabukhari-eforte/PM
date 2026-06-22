@@ -31,7 +31,7 @@ export function StandupRequiredModal({
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent forced className="max-w-lg">
         <DialogHeader>
-          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
             <MessageSquare className="h-5 w-5" />
           </div>
           <DialogTitle>Daily standup required</DialogTitle>
