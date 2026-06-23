@@ -84,6 +84,17 @@ summary {
   cursor: pointer;
 }
 
+.scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 /* Subtle app background texture */
 .app-shell-bg {
   background-color: var(--background);

@@ -2,26 +2,31 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, ClipboardList, Users } from "lucide-react";
+import { BarChart3, ClipboardList, Settings, Users } from "lucide-react";
 import { AppHeader } from "@/components/layout/app-header";
 import { BoardQuickLink } from "@/components/layout/board-quick-link";
 import { PageContent } from "@/components/layout/page-content";
+import { ProjectGettingStarted } from "@/components/projects/project-getting-started";
 import { Badge } from "@/components/ui/badge";
 import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
-import type { Project, ProjectLookups } from "@/lib/api/types";
+import type { PlanTask, Project, ProjectLookups, ProjectPlan, Sprint } from "@/lib/api/types";
 import { useUiStore } from "@/lib/stores/ui-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { canManageTeam } from "@/lib/utils/roles";
+import { canManageProjects, canManageTeam } from "@/lib/utils/roles";
 import { cn } from "@/lib/utils";
 
 function lookupLabel(options: { id: string; label: string }[] | undefined, id: string | null | undefined) {
   if (!id || !options) return null;
   return options.find((o) => o.id === id)?.label ?? null;
+}
+
+function countPlanTasks(nodes: PlanTask[]): number {
+  return nodes.reduce((sum, n) => sum + 1 + countPlanTasks(n.subtasks ?? []), 0);
 }
 
 export function ProjectDetailView() {
@@ -30,6 +35,7 @@ export function ProjectDetailView() {
   const setActiveProjectId = useUiStore((s) => s.setActiveProjectId);
   const user = useAuthStore((s) => s.user);
   const canManage = canManageTeam(user?.role);
+  const canSettings = canManageProjects(user?.role);
 
   useEffect(() => {
     if (projectId) setActiveProjectId(projectId);
@@ -46,6 +52,25 @@ export function ProjectDetailView() {
     queryFn: () => apiClient<ProjectLookups>(endpoints.lookups.project),
   });
   const lookups = lookupsQuery.data;
+
+  const planQuery = useQuery({
+    queryKey: ["plan", projectId],
+    queryFn: () => apiClient<ProjectPlan>(endpoints.projects.plan(projectId)),
+    enabled: !!projectId,
+  });
+
+  const sprintsQuery = useQuery({
+    queryKey: ["sprints", projectId],
+    queryFn: () => apiClient<Sprint[]>(endpoints.projects.sprints(projectId)),
+    enabled: !!projectId,
+  });
+
+  const planTaskCount = useMemo(
+    () => (planQuery.data ? countPlanTasks(planQuery.data.nodes) : 0),
+    [planQuery.data],
+  );
+  const sprintCount = sprintsQuery.data?.length ?? 0;
+  const hasActiveSprint = (sprintsQuery.data?.some((s) => s.status === "active") ?? false);
 
   return (
     <>
@@ -103,25 +128,40 @@ export function ProjectDetailView() {
               </div>
             </section>
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            <ProjectGettingStarted
+              projectId={projectId}
+              planTaskCount={planTaskCount}
+              sprintCount={sprintCount}
+              hasActiveSprint={hasActiveSprint}
+            />
+
+            <div className={cn("grid gap-4", canSettings ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3")}>
               <QuickLinkCard
                 href={`/projects/${projectId}/plan/`}
                 icon={ClipboardList}
                 title="Project plan"
-                description="WBS schedule & milestones"
+                description="Work breakdown & milestones"
               />
               <QuickLinkCard
                 href={`/projects/${projectId}/team/`}
                 icon={Users}
-                title={canManage ? "Team" : "Team"}
+                title="Team"
                 description={canManage ? "Manage members" : "View members"}
               />
               <QuickLinkCard
                 href={`/projects/${projectId}/reports/`}
                 icon={BarChart3}
                 title="Reports"
-                description="Burndown, velocity, risks & team metrics"
+                description="Burndown, velocity & metrics"
               />
+              {canSettings && (
+                <QuickLinkCard
+                  href={`/projects/${projectId}/settings/`}
+                  icon={Settings}
+                  title="Settings"
+                  description="Permissions & plan options"
+                />
+              )}
             </div>
 
             <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
@@ -132,7 +172,7 @@ export function ProjectDetailView() {
                 <Meta label="Type" value={lookupLabel(lookups?.projectTypes, project.projectTypeId)} />
                 <Meta label="Category" value={lookupLabel(lookups?.categories, project.categoryId)} />
                 <Meta label="Status" value={lookupLabel(lookups?.projectStatuses, project.projectStatusId)} />
-                <Meta label="BRD date" value={project.brdReceivingDate} />
+                <Meta label="Requirements received" value={project.brdReceivingDate} />
                 <Meta label="Members" value={String(project.memberCount)} />
                 <Meta label="Active sprints" value={String(project.activeSprintCount)} />
               </dl>

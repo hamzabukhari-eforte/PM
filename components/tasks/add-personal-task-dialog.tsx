@@ -39,7 +39,7 @@ export function AddPersonalTaskDialog({
     onSubmit({
       title: data.title,
       description: data.description,
-      assigneeId: data.assigneeId,
+      assigneeIds: data.assigneeIds,
       storyPoints: data.storyPoints ? Number(data.storyPoints) : null,
       kind,
       recurrenceInterval:

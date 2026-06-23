@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { MemberMultiSelect } from "@/components/ui/member-multi-select";
 import {
   Select,
   SelectContent,
@@ -32,7 +33,7 @@ import {
 const schema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  assigneeId: z.string().optional(),
+  memberIds: z.array(z.string()).optional(),
   timelineStart: z.string().optional(),
   timelineEnd: z.string().optional(),
   isDependent: z.boolean().optional(),
@@ -165,7 +166,7 @@ export function PlanTaskDialog({
       reset({
         title: editingNode.title,
         description: editingNode.description,
-        assigneeId: editingNode.assigneeId ?? "",
+        memberIds: editingNode.memberIds?.length ? [...editingNode.memberIds] : [],
         timelineStart: toTicketDateTimePickerValue(editingNode.timelineStart),
         timelineEnd: toTicketDateTimePickerValue(editingNode.timelineEnd),
         isDependent: editingNode.isDependent,
@@ -178,7 +179,7 @@ export function PlanTaskDialog({
       reset({
         title: "",
         description: "",
-        assigneeId: "",
+        memberIds: [],
         timelineStart: "",
         timelineEnd: "",
         isDependent: false,
@@ -191,6 +192,7 @@ export function PlanTaskDialog({
   }, [editingNode, open, reset]);
 
   function onSubmit(data: FormData) {
+    const memberIds = data.memberIds ?? [];
     const node: PlanTask = {
       id: editingNode?.id ?? `plan-${Date.now()}`,
       code: editingNode?.code ?? nextCode(plan.nodes, parentId),
@@ -198,8 +200,8 @@ export function PlanTaskDialog({
       description: data.description ?? "",
       kind: parentId ? "subtask" : "task",
       order: editingNode?.order ?? plan.nodes.length,
-      assigneeId: data.assigneeId || null,
-      memberIds: data.assigneeId ? [data.assigneeId] : [],
+      assigneeId: memberIds[0] ?? null,
+      memberIds,
       timelineStart: fromTicketDateTimePickerValue(data.timelineStart ?? ""),
       timelineEnd: fromTicketDateTimePickerValue(data.timelineEnd ?? ""),
       isDependent: data.isDependent ?? false,
@@ -253,24 +255,16 @@ export function PlanTaskDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label>Task leader</Label>
+            <Label>Assigned to</Label>
             <Controller
-              name="assigneeId"
+              name="memberIds"
               control={control}
               render={({ field }) => (
-                <Select value={field.value || "none"} onValueChange={(v) => field.onChange(v === "none" ? "" : v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select assignee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Unassigned</SelectItem>
-                    {members.map((m) => (
-                      <SelectItem key={m.userId} value={m.userId}>
-                        {m.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MemberMultiSelect
+                  members={members}
+                  value={field.value ?? []}
+                  onChange={field.onChange}
+                />
               )}
             />
           </div>

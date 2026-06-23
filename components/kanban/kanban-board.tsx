@@ -1,18 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   closestCorners,
+  pointerWithin,
+  type CollisionDetection,
+  type DragCancelEvent,
   type DragEndEvent,
+  type DragOverEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Board, CreateTaskInput, ProjectMember, SubTask, Task, UpdateTaskInput } from "@/lib/api/types";
+import type { Board, BoardColumn, CreateTaskInput, ProjectMember, SubTask, Task, UpdateTaskInput } from "@/lib/api/types";
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import { KanbanColumn } from "@/components/kanban/kanban-column";
@@ -40,6 +46,31 @@ import {
   type SubtaskFormItem,
 } from "@/lib/utils/task-hierarchy";
 import { canMoveTaskToColumn } from "@/lib/utils/task-status-flow";
+import { resolveAssignees } from "@/lib/utils/task-assignees";
+
+const kanbanCollisionDetection: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args);
+  if (pointerCollisions.length > 0) return pointerCollisions;
+  return closestCorners(args);
+};
+
+function findColumnId(columns: BoardColumn[], taskOrColumnId: string): string | null {
+  if (columns.some((column) => column.id === taskOrColumnId)) return taskOrColumnId;
+  for (const column of columns) {
+    if (column.tasks.some((task) => task.id === taskOrColumnId)) return column.id;
+  }
+  return null;
+}
+
+function sortBoardColumns(columns: BoardColumn[]): BoardColumn[] {
+  return columns
+    .slice()
+    .sort((a, b) => a.order - b.order)
+    .map((column) => ({
+      ...column,
+      tasks: column.tasks.slice().sort((a, b) => a.order - b.order),
+    }));
+}
 
 export function KanbanBoard({
   board,
@@ -62,12 +93,15 @@ export function KanbanBoard({
   const [followupTask, setFollowupTask] = useState<Task | null>(null);
   const [togglingSubtaskId, setTogglingSubtaskId] = useState<string | null>(null);
   const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>("all");
+  const isDraggingRef = useRef(false);
+  const dragColumnsRef = useRef<BoardColumn[]>([]);
 
   const hierarchyIndex = useMemo(() => buildTaskHierarchyIndex(board), [board]);
   const linkTargets = useMemo(() => buildLinkTargets(board), [board]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 120, tolerance: 6 } }),
   );
 
   const filteredBoard = useMemo(() => {
@@ -76,11 +110,28 @@ export function KanbanBoard({
       columns: board.columns.map((col) => ({
         ...col,
         tasks: col.tasks.filter((t) =>
-          matchesAssigneeFilter(t.assigneeId, assigneeFilter, currentUserId),
+          matchesAssigneeFilter(t.assigneeIds, assigneeFilter, currentUserId),
         ),
       })),
     };
   }, [board, assigneeFilter, currentUserId]);
+
+  const displayColumns = useMemo(
+    () => sortBoardColumns(filteredBoard.columns),
+    [filteredBoard],
+  );
+
+  const [dragColumns, setDragColumns] = useState(displayColumns);
+
+  useEffect(() => {
+    if (!isDraggingRef.current) {
+      setDragColumns(displayColumns);
+    }
+  }, [displayColumns]);
+
+  useEffect(() => {
+    dragColumnsRef.current = dragColumns;
+  }, [dragColumns]);
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["board", projectId, sprintId] });
@@ -128,10 +179,117 @@ export function KanbanBoard({
   }
 
   function handleDragStart(event: DragStartEvent) {
+    isDraggingRef.current = true;
     const activeId = String(event.active.id);
     if (activeId.startsWith("sub:") || activeId.startsWith("panel-sub:")) return;
     const found = findTask(activeId);
     if (found) setActiveTask(found.task);
+  }
+
+  function handleDragOver(event: DragOverEvent) {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeId = String(active.id);
+    if (activeId.startsWith("sub:") || activeId.startsWith("panel-sub:")) return;
+
+    const overId = String(over.id);
+    const activeColumnId = findColumnId(dragColumnsRef.current, activeId);
+    const overColumnId = findColumnId(dragColumnsRef.current, overId);
+
+    if (!activeColumnId || !overColumnId) return;
+    if (!canMoveTaskToColumn(activeColumnId, overColumnId)) return;
+
+    // Only reorder within the same column while dragging — cross-column moves on drop.
+    // Moving the sortable node between columns during drag breaks DragOverlay positioning.
+    if (activeColumnId !== overColumnId) return;
+
+    setDragColumns((columns) => {
+      const activeColIdx = columns.findIndex((column) => column.id === activeColumnId);
+      const overCol = columns[activeColIdx];
+      const activeTaskIdx = overCol.tasks.findIndex((task) => task.id === activeId);
+      if (activeTaskIdx === -1) return columns;
+
+      const overTaskIdx = overCol.tasks.findIndex((task) => task.id === overId);
+      if (overTaskIdx === -1 || activeTaskIdx === overTaskIdx) return columns;
+
+      return columns.map((column, idx) =>
+        idx === activeColIdx
+          ? { ...column, tasks: arrayMove(column.tasks, activeTaskIdx, overTaskIdx) }
+          : column,
+      );
+    });
+  }
+
+  function resetDragState() {
+    isDraggingRef.current = false;
+    setActiveTask(null);
+    setDragColumns(displayColumns);
+  }
+
+  function resolveMainTaskDropTarget(
+    overId: string,
+  ): { columnId: string; overTask: Task | null } | null {
+    const overSub = parseAnySubtaskSortId(overId);
+    if (overSub) {
+      const mainTaskId = findMainTaskIdForParent(board, overSub.parentId);
+      if (!mainTaskId) return null;
+      const found = findTask(mainTaskId);
+      if (!found) return null;
+      return { columnId: found.columnId, overTask: found.task };
+    }
+
+    const overTask = findTask(overId);
+    if (overTask) return { columnId: overTask.columnId, overTask: overTask.task };
+
+    const col = board.columns.find((c) => c.id === overId);
+    if (col) return { columnId: col.id, overTask: null };
+
+    return null;
+  }
+
+  function persistMainTaskMove(taskId: string, overId: string) {
+    const original = findTask(taskId);
+    if (!original) return;
+
+    const dropTarget = resolveMainTaskDropTarget(overId);
+    if (!dropTarget) return;
+
+    const { columnId: targetColumnId, overTask } = dropTarget;
+
+    if (!canMoveTaskToColumn(original.columnId, targetColumnId)) {
+      setDragColumns(displayColumns);
+      return;
+    }
+
+    const targetCol = board.columns.find((c) => c.id === targetColumnId);
+    if (!targetCol) return;
+
+    const sorted = targetCol.tasks.slice().sort((a, b) => a.order - b.order);
+    const oldIndex = sorted.findIndex((t) => t.id === taskId);
+
+    let newIndex: number;
+    if (overTask && overTask.id !== taskId) {
+      newIndex = sorted.findIndex((t) => t.id === overTask.id);
+    } else {
+      newIndex = Math.max(
+        0,
+        sorted.length - (original.columnId === targetColumnId ? 1 : 0),
+      );
+    }
+
+    if (newIndex === -1) return;
+    if (original.columnId === targetColumnId && oldIndex === newIndex) return;
+
+    if (original.columnId === targetColumnId) {
+      updateMutation.mutate({ taskId, body: { order: newIndex } });
+      return;
+    }
+
+    updateMutation.mutate({
+      taskId,
+      body: { columnId: targetColumnId, order: newIndex },
+    });
   }
 
   function handleSubtaskDrag(activeId: string, overId: string) {
@@ -160,85 +318,30 @@ export function KanbanBoard({
     });
   }
 
-  function resolveMainTaskDropTarget(
-    overId: string,
-  ): { columnId: string; overTask: Task | null } | null {
-    const overSub = parseAnySubtaskSortId(overId);
-    if (overSub) {
-      const mainTaskId = findMainTaskIdForParent(board, overSub.parentId);
-      if (!mainTaskId) return null;
-      const found = findTask(mainTaskId);
-      if (!found) return null;
-      return { columnId: found.columnId, overTask: found.task };
-    }
-
-    const overTask = findTask(overId);
-    if (overTask) return { columnId: overTask.columnId, overTask: overTask.task };
-
-    const col = board.columns.find((c) => c.id === overId);
-    if (col) return { columnId: col.id, overTask: null };
-
-    return null;
-  }
-
-  function handleMainTaskDrag(activeId: string, overId: string) {
-    const activeFound = findTask(activeId);
-    if (!activeFound) return;
-
-    const dropTarget = resolveMainTaskDropTarget(overId);
-    if (!dropTarget) return;
-
-    const { columnId: targetColumnId, overTask } = dropTarget;
-
-    if (!canMoveTaskToColumn(activeFound.columnId, targetColumnId)) return;
-
-    const targetCol = board.columns.find((c) => c.id === targetColumnId);
-    if (!targetCol) return;
-
-    const sorted = targetCol.tasks.slice().sort((a, b) => a.order - b.order);
-    const oldIndex = sorted.findIndex((t) => t.id === activeId);
-
-    let newIndex: number;
-    if (overTask && overTask.id !== activeId) {
-      newIndex = sorted.findIndex((t) => t.id === overTask.id);
-    } else {
-      newIndex = Math.max(
-        0,
-        sorted.length - (activeFound.columnId === targetColumnId ? 1 : 0),
-      );
-    }
-
-    if (newIndex === -1) return;
-    if (activeFound.columnId === targetColumnId && oldIndex === newIndex) return;
-
-    if (activeFound.columnId === targetColumnId) {
-      updateMutation.mutate({
-        taskId: activeId,
-        body: { order: newIndex },
-      });
-      return;
-    }
-
-    updateMutation.mutate({
-      taskId: activeId,
-      body: { columnId: targetColumnId, order: newIndex },
-    });
-  }
-
   function handleDragEnd(event: DragEndEvent) {
-    setActiveTask(null);
     const { active, over } = event;
-    if (!over) return;
-
     const activeId = String(active.id);
-    const overId = String(over.id);
 
     if (activeId.startsWith("sub:") || activeId.startsWith("panel-sub:")) {
-      handleSubtaskDrag(activeId, overId);
+      isDraggingRef.current = false;
+      setActiveTask(null);
+      if (over) handleSubtaskDrag(activeId, String(over.id));
       return;
     }
 
-    handleMainTaskDrag(activeId, overId);
+    isDraggingRef.current = false;
+    setActiveTask(null);
+
+    if (!over) {
+      setDragColumns(displayColumns);
+      return;
+    }
+
+    persistMainTaskMove(activeId, String(over.id));
+  }
+
+  function handleDragCancel(_event: DragCancelEvent) {
+    resetDragState();
   }
 
   function mapFormSubtasks(
@@ -247,6 +350,8 @@ export function KanbanBoard({
   ): SubTask[] {
     return subtasks.map((sub, index) => {
       const existing = sub.id ? existingById.get(sub.id) : undefined;
+      const assigneeIds = sub.assigneeIds ?? existing?.assigneeIds ?? [];
+      const { assigneeNames } = resolveAssignees(assigneeIds, members);
       return {
         id: sub.id ?? `st-${Date.now()}-${index}`,
         title: sub.title,
@@ -254,6 +359,8 @@ export function KanbanBoard({
         order: index,
         linkedTaskId: sub.linkedTaskId ?? null,
         completed: existing?.completed ?? false,
+        assigneeIds,
+        assigneeNames,
         subtasks: sub.subtasks?.length
           ? mapFormSubtasks(sub.subtasks, existingById)
           : [],
@@ -287,7 +394,7 @@ export function KanbanBoard({
     const body: UpdateTaskInput = {
       title: data.title,
       description: data.description ?? "",
-      assigneeId: data.assigneeId ?? null,
+      assigneeIds: data.assigneeIds ?? [],
       storyPoints: data.storyPoints ? Number(data.storyPoints) : null,
       subtasks: buildSubtasksPayload(data.subtasks, findTaskById(taskId)),
     };
@@ -306,7 +413,7 @@ export function KanbanBoard({
       title: data.title,
       description: data.description,
       columnId,
-      assigneeId: data.assigneeId ?? null,
+      assigneeIds: data.assigneeIds ?? [],
       storyPoints: data.storyPoints ? Number(data.storyPoints) : null,
       kind: "project",
       subtasks: data.subtasks?.length ? formSubtasksToCreateInput(data.subtasks) : undefined,
@@ -315,7 +422,7 @@ export function KanbanBoard({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="min-w-0 space-y-5">
       <BoardAssigneeFilter
         members={members}
         currentUserId={currentUserId}
@@ -324,17 +431,19 @@ export function KanbanBoard({
       />
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={kanbanCollisionDetection}
         onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
       >
-        <div className="flex gap-4 overflow-x-auto pb-2">
-          {filteredBoard.columns
-            .sort((a, b) => a.order - b.order)
-            .map((column) => (
+        <div className="w-full min-w-0 overflow-x-hidden">
+          <div className="scrollbar-hidden -mx-6 flex w-full min-w-0 gap-4 overflow-x-auto overscroll-x-contain px-6 pb-1 lg:-mx-8 lg:px-8 xl:-mx-10 xl:px-10">
+            {dragColumns.map((column) => (
               <KanbanColumn
                 key={column.id}
                 column={column}
+                draggingTaskId={activeTask?.id}
                 members={members}
                 linkTargets={linkTargets}
                 hierarchyIndex={hierarchyIndex}
@@ -346,13 +455,19 @@ export function KanbanBoard({
                 creating={createMutation.isPending}
               />
             ))}
+          </div>
         </div>
-        <DragOverlay>
+        <DragOverlay
+          dropAnimation={{
+            duration: 200,
+            easing: "cubic-bezier(0.18, 0.67, 0.6, 1)",
+          }}
+        >
           {activeTask ? (
             <KanbanCard
               task={activeTask}
               hierarchyIndex={hierarchyIndex}
-              isDragging
+              overlay
             />
           ) : null}
         </DragOverlay>

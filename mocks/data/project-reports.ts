@@ -3,7 +3,10 @@ import type {
   BurndownPoint,
   CumulativeFlowPoint,
   MilestoneProgressPoint,
+  PlanGanttChart,
+  PlanGanttItem,
   PlanTask,
+  Project,
   ProjectReportsSummary,
   RiskIndicator,
   SprintHealthPoint,
@@ -23,6 +26,7 @@ import {
   sprints,
   standupEntries,
 } from "./seed";
+import { memberNamesFromIds } from "@/lib/utils/task-assignees";
 import { projectPlans } from "./project-plans";
 
 const STATUS_COLORS: Record<TaskStatus, string> = {
@@ -58,6 +62,62 @@ function flattenPlan(nodes: PlanTask[]): PlanTask[] {
     if (n.subtasks?.length) out.push(...flattenPlan(n.subtasks));
   }
   return out;
+}
+
+function buildPlanGantt(
+  projectId: string,
+  project: Project,
+  planNodes: PlanTask[],
+): PlanGanttChart {
+  const members = projectMembers[projectId] ?? [];
+  const items: PlanGanttItem[] = [];
+
+  function walk(nodes: PlanTask[], depth: number) {
+    for (const node of nodes) {
+      if (node.timelineStart && node.timelineEnd) {
+        items.push({
+          id: node.id,
+          code: node.code,
+          title: node.title,
+          kind: node.kind,
+          depth,
+          assigneeNames: memberNamesFromIds(node.memberIds, members),
+          startDate: node.timelineStart,
+          endDate: node.timelineEnd,
+          isMilestone: node.isMilestone,
+          milestoneNo: node.milestoneNo,
+          dependentTaskCode: node.dependentTaskCode,
+        });
+      }
+      if (node.subtasks?.length) walk(node.subtasks, depth + 1);
+    }
+  }
+
+  walk(planNodes, 0);
+
+  const fallbackStart = project.startDate ?? new Date().toISOString();
+  const fallbackEnd =
+    project.endDate ??
+    new Date(Date.now() + 30 * 86400000).toISOString();
+
+  if (items.length === 0) {
+    return { rangeStart: fallbackStart, rangeEnd: fallbackEnd, items: [] };
+  }
+
+  const startMs = Math.min(
+    ...items.map((item) => new Date(item.startDate).getTime()),
+    new Date(fallbackStart).getTime(),
+  );
+  const endMs = Math.max(
+    ...items.map((item) => new Date(item.endDate).getTime()),
+    new Date(fallbackEnd).getTime(),
+  );
+
+  return {
+    rangeStart: new Date(startMs).toISOString(),
+    rangeEnd: new Date(endMs).toISOString(),
+    items,
+  };
 }
 
 function daysBetween(start: string | null | undefined, end: string | null | undefined): number | null {
@@ -261,21 +321,23 @@ export function buildProjectReportsSummary(
 
   const assigneeMap = new Map<string, AssigneeWorkloadPoint>();
   for (const t of tasks) {
-    const name = t.assigneeName ?? "Unassigned";
-    const cur = assigneeMap.get(name) ?? {
-      name,
-      totalTasks: 0,
-      doneTasks: 0,
-      storyPoints: 0,
-      donePoints: 0,
-    };
-    cur.totalTasks += 1;
-    cur.storyPoints += t.storyPoints ?? 0;
-    if (t.status === "done") {
-      cur.doneTasks += 1;
-      cur.donePoints += t.storyPoints ?? 0;
+    const names = t.assigneeNames.length > 0 ? t.assigneeNames : ["Unassigned"];
+    for (const name of names) {
+      const cur = assigneeMap.get(name) ?? {
+        name,
+        totalTasks: 0,
+        doneTasks: 0,
+        storyPoints: 0,
+        donePoints: 0,
+      };
+      cur.totalTasks += 1;
+      cur.storyPoints += t.storyPoints ?? 0;
+      if (t.status === "done") {
+        cur.doneTasks += 1;
+        cur.donePoints += t.storyPoints ?? 0;
+      }
+      assigneeMap.set(name, cur);
     }
-    assigneeMap.set(name, cur);
   }
   const assigneeWorkload = [...assigneeMap.values()].sort((a, b) => b.storyPoints - a.storyPoints);
 
@@ -401,6 +463,7 @@ export function buildProjectReportsSummary(
     standupParticipation: standup,
     timeInStatus,
     risks: buildRisks(tasks, velocity, standupRate, daysRemaining),
+    planGantt: buildPlanGantt(projectId, project, plan?.nodes ?? []),
     planSummary: {
       wbsNodes: planNodes.length,
       milestones: milestones.length,

@@ -33,6 +33,7 @@ import type {
 import { normalizeStandupEntry, standupIncludesProject } from "@/lib/utils/standup";
 import { mergeTaskUpdate, repositionTaskInColumn } from "../data/task-mutations";
 import { createBaseTask, createPersonalTask, mapCreateSubtasks, statusFromColumnId } from "../data/task-factory";
+import { resolveAssignees, taskIsAssignedTo } from "@/lib/utils/task-assignees";
 import { canMoveTaskToColumn } from "@/lib/utils/task-status-flow";
 import { dashboardAnalytics } from "../data/analytics";
 import { nextReminderAt } from "@/lib/utils/routine";
@@ -67,6 +68,17 @@ function requireAuth(request: Request): User | Response {
     return HttpResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
   return user;
+}
+
+function applyTaskAssignees(task: Task, assigneeIds: string[] | undefined): Task {
+  if (assigneeIds === undefined) return task;
+  const resolved = resolveAssignees(
+    assigneeIds,
+    users.map((u) => ({ userId: u.id, name: u.name })),
+  );
+  task.assigneeIds = resolved.assigneeIds;
+  task.assigneeNames = resolved.assigneeNames;
+  return task;
 }
 
 function isToday(iso: string): boolean {
@@ -113,7 +125,7 @@ export const handlers = [
     if (user instanceof Response) return user;
 
     const myTasks = getAllTasks()
-      .filter((t) => t.assigneeId === user.id && t.status !== "done")
+      .filter((t) => taskIsAssignedTo(t, user.id) && t.status !== "done")
       .map((t) => ({
         ...t,
         projectName: t.projectId
@@ -461,14 +473,11 @@ export const handlers = [
     const personalIdx = personalTasks.findIndex((t) => t.id === taskId);
     if (personalIdx >= 0) {
       const existing = personalTasks[personalIdx];
-      if (user.role !== "admin" && existing.assigneeId !== user.id) {
+      if (user.role !== "admin" && !taskIsAssignedTo(existing, user.id)) {
         return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
       }
       const updated = mergeTaskUpdate(existing, body);
-      if (body.assigneeId) {
-        const assignee = users.find((u) => u.id === body.assigneeId);
-        updated.assigneeName = assignee?.name ?? null;
-      }
+      applyTaskAssignees(updated, body.assigneeIds);
       personalTasks[personalIdx] = updated;
       return HttpResponse.json(updated);
     }
@@ -483,12 +492,7 @@ export const handlers = [
 
         if (body.order !== undefined && (!body.columnId || body.columnId === col.id)) {
           const updated = mergeTaskUpdate(task, body);
-          if (body.assigneeId !== undefined) {
-            const assignee = body.assigneeId
-              ? users.find((u) => u.id === body.assigneeId)
-              : null;
-            updated.assigneeName = assignee?.name ?? null;
-          }
+          applyTaskAssignees(updated, body.assigneeIds);
           if (body.archived) {
             updated.archived = true;
           }
@@ -518,12 +522,7 @@ export const handlers = [
             { ...task, columnId: body.columnId },
             body,
           );
-          if (body.assigneeId !== undefined) {
-            const assignee = body.assigneeId
-              ? users.find((u) => u.id === body.assigneeId)
-              : null;
-            updated.assigneeName = assignee?.name ?? null;
-          }
+          applyTaskAssignees(updated, body.assigneeIds);
           targetCol.tasks = repositionTaskInColumn(
             targetCol.tasks,
             updated,
@@ -533,12 +532,7 @@ export const handlers = [
         }
 
         const updated = mergeTaskUpdate(task, body);
-        if (body.assigneeId !== undefined) {
-          const assignee = body.assigneeId
-            ? users.find((u) => u.id === body.assigneeId)
-            : null;
-          updated.assigneeName = assignee?.name ?? null;
-        }
+        applyTaskAssignees(updated, body.assigneeIds);
         if (body.archived) {
           updated.archived = true;
         }
@@ -557,7 +551,7 @@ export const handlers = [
     const kind = url.searchParams.get("kind");
     let result = personalTasks.map((t) => ({ ...t }));
     if (user.role !== "admin") {
-      result = result.filter((t) => t.assigneeId === user.id);
+      result = result.filter((t) => taskIsAssignedTo(t, user.id));
     }
     if (kind === "miscellaneous" || kind === "routine") {
       result = result.filter((t) => t.kind === kind);
@@ -572,20 +566,23 @@ export const handlers = [
       return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
     }
     const body = (await request.json()) as CreatePersonalTaskInput;
-    if (!body.assigneeId) {
-      return HttpResponse.json({ message: "assigneeId is required" }, { status: 400 });
+    if (!body.assigneeIds?.length) {
+      return HttpResponse.json({ message: "At least one assignee is required" }, { status: 400 });
     }
-    const assignee = users.find((u) => u.id === body.assigneeId);
-    if (!assignee) {
-      return HttpResponse.json({ message: "Assignee not found" }, { status: 400 });
+    const resolved = resolveAssignees(
+      body.assigneeIds,
+      users.map((u) => ({ userId: u.id, name: u.name })),
+    );
+    if (resolved.assigneeIds.length !== body.assigneeIds.length) {
+      return HttpResponse.json({ message: "One or more assignees not found" }, { status: 400 });
     }
     const task = createPersonalTask(
       `pt-${Date.now()}`,
       body.kind,
       body.title,
       "todo",
-      assignee.id,
-      assignee.name,
+      resolved.assigneeIds,
+      resolved.assigneeNames,
       body.recurrenceInterval,
       body.storyPoints,
     );
@@ -610,10 +607,14 @@ export const handlers = [
     }
     const col = board.find((c) => c.id === body.columnId);
     if (!col) return HttpResponse.json({ message: "Column not found" }, { status: 404 });
-    const assignee = body.assigneeId ? users.find((u) => u.id === body.assigneeId) : null;
+    const assigneeNameMap = new Map(users.map((u) => [u.id, u.name]));
     const subtasks = body.subtasks?.length
-      ? mapCreateSubtasks(body.subtasks, Date.now())
+      ? mapCreateSubtasks(body.subtasks, Date.now(), assigneeNameMap)
       : [];
+    const resolved = resolveAssignees(
+      body.assigneeIds ?? [],
+      users.map((u) => ({ userId: u.id, name: u.name })),
+    );
 
     const newTask: Task = createBaseTask({
       id: `t-${Date.now()}`,
@@ -625,8 +626,8 @@ export const handlers = [
       description: body.description ?? "",
       status: statusFromColumnId(body.columnId),
       order: col.tasks.length,
-      assigneeId: body.assigneeId ?? null,
-      assigneeName: assignee?.name ?? null,
+      assigneeIds: resolved.assigneeIds,
+      assigneeNames: resolved.assigneeNames,
       storyPoints: body.storyPoints ?? null,
       subtasks,
     });

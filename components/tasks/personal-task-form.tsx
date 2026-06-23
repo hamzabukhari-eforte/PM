@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { MemberMultiSelect } from "@/components/ui/member-multi-select";
 import type { RecurrenceInterval, User } from "@/lib/api/types";
 import { parseTicketDateTimeLocal } from "@/lib/utils/ticket-datetime";
 import { recurrenceLabels } from "@/lib/utils/routine";
@@ -24,7 +25,7 @@ const baseSchema = z
     title: z.string().min(1, "Title is required"),
     description: z.string().optional(),
     storyPoints: z.string().optional(),
-    assigneeId: z.string().min(1, "Assignee is required"),
+    assigneeIds: z.array(z.string()).min(1, "At least one assignee is required"),
     timelineStart: z
       .string()
       .min(1, "From date & time is required")
@@ -81,6 +82,7 @@ export function PersonalTaskForm({
   } = useForm<PersonalTaskFormData>({
     resolver: zodResolver(schema),
     defaultValues: {
+      assigneeIds: [],
       recurrenceInterval: kind === "routine" ? "week" : undefined,
       timelineStart: "",
       timelineEnd: "",
@@ -161,25 +163,19 @@ export function PersonalTaskForm({
         <div className="space-y-2">
           <Label>Assigned to</Label>
           <Controller
-            name="assigneeId"
+            name="assigneeIds"
             control={control}
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select assignee" />
-                </SelectTrigger>
-                <SelectContent>
-                  {assignees.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <MemberMultiSelect
+                members={assignees.map((u) => ({ userId: u.id, name: u.name }))}
+                value={field.value ?? []}
+                onChange={field.onChange}
+                placeholder="Select team members…"
+              />
             )}
           />
-          {errors.assigneeId && (
-            <p className="text-sm text-destructive">{errors.assigneeId.message}</p>
+          {errors.assigneeIds && (
+            <p className="text-sm text-destructive">{errors.assigneeIds.message}</p>
           )}
         </div>
       </div>

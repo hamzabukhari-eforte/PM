@@ -48,12 +48,4 @@ export function BoardAssigneeFilter({
   );
 }
 
-export function matchesAssigneeFilter(
-  assigneeId: string | null,
-  filter: AssigneeFilter,
-  currentUserId?: string,
-): boolean {
-  if (filter === "all") return true;
-  if (filter === "me") return assigneeId === currentUserId;
-  return assigneeId === filter;
-}
+export { matchesAssigneeFilter } from "@/lib/utils/task-assignees";

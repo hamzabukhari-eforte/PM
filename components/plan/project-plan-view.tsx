@@ -14,6 +14,7 @@ import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type { PlanTask, Project, ProjectMember, ProjectPlan } from "@/lib/api/types";
 import { isoToTicketDateTimeLocal } from "@/lib/utils/ticket-datetime";
+import { memberNamesFromIds } from "@/lib/utils/task-assignees";
 import { downloadPlanCsv, flattenPlanForTable } from "@/lib/utils/plan-export";
 import { useProjectMembers } from "@/lib/hooks/use-project-members";
 
@@ -77,11 +78,6 @@ export function ProjectPlanView({ projectId }: { projectId: string }) {
     setDialogOpen(true);
   }
 
-  function handleToggleSubtaskCreation(checked: boolean) {
-    if (!plan) return;
-    saveMutation.mutate({ ...plan, allowSubtaskCreation: checked });
-  }
-
   function handleExportCsv() {
     if (!plan) return;
     downloadPlanCsv(plan, members, projectQuery.data?.name);
@@ -126,17 +122,7 @@ export function ProjectPlanView({ projectId }: { projectId: string }) {
               </div>
             </div>
 
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm">
-              <input
-                type="checkbox"
-                checked={plan.allowSubtaskCreation}
-                onChange={(e) => handleToggleSubtaskCreation(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300"
-              />
-              Allow assignees to create sub-tasks
-            </label>
-
-            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="scrollbar-hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
               <table className="w-full min-w-[960px] border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50/90 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
@@ -204,7 +190,7 @@ function PlanTableRow({
   taskTitlesByCode: Map<string, string>;
   onEdit: (node: PlanTask) => void;
 }) {
-  const assignee = members.find((m) => m.userId === node.assigneeId);
+  const assigneeNames = memberNamesFromIds(node.memberIds, members);
   const dependencyTitle = node.dependentTaskCode
     ? taskTitlesByCode.get(node.dependentTaskCode)
     : null;
@@ -229,12 +215,7 @@ function PlanTableRow({
         {formatDate(node.timelineEnd)}
       </td>
       <td className="px-4 py-3 align-middle text-slate-700">
-        {assignee?.name ?? "—"}
-        {node.memberIds.length > 1 && (
-          <span className="mt-0.5 block text-slate-400">
-            +{node.memberIds.length - 1} team member{node.memberIds.length > 2 ? "s" : ""}
-          </span>
-        )}
+        {assigneeNames.length > 0 ? assigneeNames.join(", ") : "—"}
       </td>
       <td className="px-4 py-3 align-middle">
         {node.isMilestone ? (

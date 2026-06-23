@@ -7,6 +7,7 @@ import { AppHeader } from "@/components/layout/app-header";
 import { AddTaskDialog } from "@/components/tasks/add-task-dialog";
 import type { CreateTaskFormData } from "@/components/tasks/create-task-form";
 import { formSubtasksToCreateInput } from "@/lib/utils/task-hierarchy";
+import { AssigneeDisplay } from "@/components/tasks/assignee-display";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -69,7 +70,7 @@ export function SprintDetailView() {
       title: data.title,
       description: data.description,
       columnId: defaultTodoColumnId(sprintId),
-      assigneeId: data.assigneeId ?? null,
+      assigneeIds: data.assigneeIds ?? [],
       storyPoints: data.storyPoints ? Number(data.storyPoints) : null,
       subtasks: data.subtasks?.length ? formSubtasksToCreateInput(data.subtasks) : undefined,
     });
@@ -123,7 +124,9 @@ export function SprintDetailView() {
                       <p className="mt-1 text-sm text-slate-500">{task.description}</p>
                     )}
                     <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
-                      {task.assigneeName && <span>{task.assigneeName}</span>}
+                      {task.assigneeNames.length > 0 && (
+                        <AssigneeDisplay names={task.assigneeNames} compact />
+                      )}
                       {task.storyPoints != null && <span>{task.storyPoints} pts</span>}
                     </div>
                   </div>

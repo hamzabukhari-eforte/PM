@@ -75,6 +75,8 @@ export interface SubTask {
   /** Main task id or another subtask id within the sprint. */
   linkedTaskId: string | null;
   completed: boolean;
+  assigneeIds: string[];
+  assigneeNames: string[];
   subtasks?: SubTask[];
 }
 
@@ -88,8 +90,8 @@ export interface Task {
   description: string;
   status: TaskStatus;
   order: number;
-  assigneeId: string | null;
-  assigneeName: string | null;
+  assigneeIds: string[];
+  assigneeNames: string[];
   storyPoints: number | null;
   /** Seconds spent in progress before review (accumulated). */
   timeInProgressSeconds: number;
@@ -281,6 +283,26 @@ export interface RiskIndicator {
   detail: string;
 }
 
+export interface PlanGanttItem {
+  id: string;
+  code: string;
+  title: string;
+  kind: PlanNodeKind;
+  depth: number;
+  assigneeNames: string[];
+  startDate: string;
+  endDate: string;
+  isMilestone: boolean;
+  milestoneNo: string | null;
+  dependentTaskCode: string | null;
+}
+
+export interface PlanGanttChart {
+  rangeStart: string;
+  rangeEnd: string;
+  items: PlanGanttItem[];
+}
+
 export interface ProjectReportsSummary {
   projectId: string;
   projectName: string;
@@ -297,6 +319,7 @@ export interface ProjectReportsSummary {
   standupParticipation: StandupParticipationPoint[];
   timeInStatus: TimeInStatusPoint[];
   risks: RiskIndicator[];
+  planGantt: PlanGanttChart;
   planSummary: {
     wbsNodes: number;
     milestones: number;
@@ -369,6 +392,7 @@ export interface CreateSubTaskInput {
   title: string;
   description?: string;
   linkedTaskId?: string | null;
+  assigneeIds?: string[];
   subtasks?: CreateSubTaskInput[];
 }
 
@@ -376,7 +400,7 @@ export interface CreateTaskInput {
   title: string;
   description?: string;
   columnId: string;
-  assigneeId?: string | null;
+  assigneeIds?: string[];
   storyPoints?: number | null;
   kind?: TaskKind;
   recurrenceInterval?: RecurrenceInterval;
@@ -386,7 +410,7 @@ export interface CreateTaskInput {
 export interface CreatePersonalTaskInput {
   title: string;
   description?: string;
-  assigneeId: string;
+  assigneeIds: string[];
   storyPoints?: number | null;
   kind: "miscellaneous" | "routine";
   recurrenceInterval?: RecurrenceInterval;
@@ -400,7 +424,7 @@ export interface UpdateTaskInput {
   status?: TaskStatus;
   columnId?: string | null;
   order?: number;
-  assigneeId?: string | null;
+  assigneeIds?: string[];
   storyPoints?: number | null;
   recurrenceInterval?: RecurrenceInterval;
   subtasks?: SubTask[];

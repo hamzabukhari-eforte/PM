@@ -6,18 +6,27 @@ export { statusFromColumnId };
 export function mapCreateSubtasks(
   subs: CreateSubTaskInput[],
   idSeed: number | string = Date.now(),
+  assigneeNamesById?: Map<string, string>,
 ): SubTask[] {
-  return subs.map((sub, index) => ({
-    id: `st-${idSeed}-${index}`,
-    title: sub.title,
-    description: sub.description ?? "",
-    order: index,
-    linkedTaskId: sub.linkedTaskId ?? null,
-    completed: false,
-    subtasks: sub.subtasks?.length
-      ? mapCreateSubtasks(sub.subtasks, `${idSeed}-${index}`)
-      : [],
-  }));
+  return subs.map((sub, index) => {
+    const assigneeIds = sub.assigneeIds ?? [];
+    const assigneeNames = assigneeIds
+      .map((id) => assigneeNamesById?.get(id))
+      .filter((name): name is string => !!name);
+    return {
+      id: `st-${idSeed}-${index}`,
+      title: sub.title,
+      description: sub.description ?? "",
+      order: index,
+      linkedTaskId: sub.linkedTaskId ?? null,
+      completed: false,
+      assigneeIds,
+      assigneeNames,
+      subtasks: sub.subtasks?.length
+        ? mapCreateSubtasks(sub.subtasks, `${idSeed}-${index}`, assigneeNamesById)
+        : [],
+    };
+  });
 }
 
 export function createBaseTask(
@@ -32,8 +41,8 @@ export function createBaseTask(
     description: "",
     status: "todo",
     order: 0,
-    assigneeId: null,
-    assigneeName: null,
+    assigneeIds: [],
+    assigneeNames: [],
     storyPoints: null,
     timeInProgressSeconds: 0,
     inProgressSince: null,
@@ -55,8 +64,8 @@ export function createProjectTask(
   title: string,
   status: TaskStatus,
   order: number,
-  assigneeId: string | null,
-  assigneeName: string | null,
+  assigneeIds: string[],
+  assigneeNames: string[],
   storyPoints: number | null,
   extras?: Partial<Task>,
 ): Task {
@@ -69,8 +78,8 @@ export function createProjectTask(
     title,
     status,
     order,
-    assigneeId,
-    assigneeName,
+    assigneeIds,
+    assigneeNames,
     storyPoints,
     inProgressSince: status === "in_progress" ? new Date(Date.now() - 3600000).toISOString() : null,
     timeInProgressSeconds: status === "review" ? 5400 : 0,
@@ -83,8 +92,8 @@ export function createPersonalTask(
   kind: Extract<TaskKind, "miscellaneous" | "routine">,
   title: string,
   status: TaskStatus,
-  assigneeId: string,
-  assigneeName: string,
+  assigneeIds: string[],
+  assigneeNames: string[],
   recurrenceInterval?: RecurrenceInterval,
   storyPoints?: number | null,
   timelineStart?: string | null,
@@ -100,8 +109,8 @@ export function createPersonalTask(
     kind,
     title,
     status,
-    assigneeId,
-    assigneeName,
+    assigneeIds,
+    assigneeNames,
     storyPoints: storyPoints ?? null,
     recurrenceInterval: kind === "routine" ? recurrenceInterval ?? "week" : null,
     nextReminderAt,

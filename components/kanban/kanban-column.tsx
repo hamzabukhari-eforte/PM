@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 export function KanbanColumn({
   column,
+  draggingTaskId,
   members,
   linkTargets,
   hierarchyIndex,
@@ -24,6 +25,7 @@ export function KanbanColumn({
   creating,
 }: {
   column: BoardColumn;
+  draggingTaskId?: string;
   members: ProjectMember[];
   linkTargets: LinkTarget[];
   hierarchyIndex: Map<string, TaskHierarchyEntry>;
@@ -77,6 +79,7 @@ export function KanbanColumn({
               key={task.id}
               task={task}
               hierarchyIndex={hierarchyIndex}
+              dragHidden={task.id === draggingTaskId}
               onOpen={onOpenTask}
               onEdit={onEditTask}
               onArchive={onArchiveTask}

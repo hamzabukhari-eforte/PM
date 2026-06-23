@@ -3,6 +3,8 @@
 import { useMemo } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type { DraggableAttributes } from "@dnd-kit/core";
+import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
 import { Clock, GripVertical, MoreHorizontal } from "lucide-react";
 import type { Board, Task } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
@@ -29,15 +31,7 @@ import {
   type TaskHierarchyEntry,
 } from "@/lib/utils/task-hierarchy";
 import { SubtaskList } from "@/components/kanban/subtask-list";
-
-function initials(name: string): string {
-  return name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
+import { AssigneeDisplay } from "@/components/tasks/assignee-display";
 
 function ProjectTaskTimer({ task }: { task: Task }) {
   const seconds = useProjectTaskTimer(task);
@@ -59,24 +53,34 @@ function ProjectTaskTimer({ task }: { task: Task }) {
   );
 }
 
-export function KanbanCard({
-  task,
-  board,
-  hierarchyIndex: hierarchyIndexProp,
-  isDragging,
-  onOpen,
-  onEdit,
-  onArchive,
-  canArchive = false,
-}: {
+type KanbanCardProps = {
   task: Task;
   board?: Board;
   hierarchyIndex?: Map<string, TaskHierarchyEntry>;
-  isDragging?: boolean;
+  overlay?: boolean;
+  dragHidden?: boolean;
   onOpen?: (task: Task) => void;
   onEdit?: (task: Task) => void;
   onArchive?: (task: Task) => void;
   canArchive?: boolean;
+};
+
+function KanbanCardView({
+  task,
+  board,
+  hierarchyIndex: hierarchyIndexProp,
+  overlay = false,
+  onOpen,
+  onEdit,
+  onArchive,
+  canArchive = false,
+  dragHandleProps,
+}: KanbanCardProps & {
+  dragHandleProps?: {
+    ref: (element: HTMLElement | null) => void;
+    attributes: DraggableAttributes;
+    listeners: SyntheticListenerMap | undefined;
+  };
 }) {
   const hierarchyIndex = useMemo(
     () => hierarchyIndexProp ?? (board ? buildTaskHierarchyIndex(board) : new Map()),
@@ -84,47 +88,32 @@ export function KanbanCard({
   );
 
   const mainLabel = hierarchyIndex.get(task.id)?.label;
-
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    setActivatorNodeRef,
-    transform,
-    transition,
-    isDragging: isSortableDragging,
-  } = useSortable({ id: task.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  const showTimer = shouldShowProjectTaskTimer(task);
+  const showTimer = shouldShowProjectTaskTimer(task) && !overlay;
   const hasSubtasks = (task.subtasks?.length ?? 0) > 0;
   const subtaskCount = countAllSubtasks(task);
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
       className={cn(
-        "group rounded-xl border border-slate-200/90 bg-white shadow-sm transition-shadow hover:border-slate-300 hover:shadow-md",
-        (isDragging || isSortableDragging) && "opacity-70 shadow-lg ring-2 ring-blue-100",
+        "group rounded-xl border border-slate-200/90 bg-white shadow-sm hover:border-slate-300 hover:shadow-md",
+        !overlay && "transition-shadow",
+        overlay && "cursor-grabbing shadow-xl ring-2 ring-indigo-100",
         task.status === "in_progress" && "border-blue-200/80",
       )}
     >
       <div className="flex items-start gap-1 p-3.5 pb-0">
-        <button
-          type="button"
-          ref={setActivatorNodeRef}
-          className="mt-0.5 shrink-0 cursor-grab touch-none rounded p-0.5 text-slate-300 transition-opacity hover:bg-slate-100 hover:text-slate-500 active:cursor-grabbing opacity-40 group-hover:opacity-100"
-          {...attributes}
-          {...listeners}
-          aria-label="Drag task"
-        >
-          <GripVertical className="h-4 w-4" />
-        </button>
+        {!overlay && dragHandleProps && (
+          <button
+            type="button"
+            ref={dragHandleProps.ref}
+            className="mt-0.5 shrink-0 cursor-grab touch-none rounded p-0.5 text-slate-300 hover:bg-slate-100 hover:text-slate-500 active:cursor-grabbing opacity-40 group-hover:opacity-100"
+            {...dragHandleProps.attributes}
+            {...dragHandleProps.listeners}
+            aria-label="Drag task"
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+        )}
 
         <button
           type="button"
@@ -148,7 +137,7 @@ export function KanbanCard({
           )}
         </button>
 
-        {(onEdit || (canArchive && onArchive)) && (
+        {!overlay && (onEdit || (canArchive && onArchive)) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -195,19 +184,7 @@ export function KanbanCard({
         )}
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
-            {task.assigneeName ? (
-              <>
-                <span
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-semibold text-slate-600"
-                  title={task.assigneeName}
-                >
-                  {initials(task.assigneeName)}
-                </span>
-                <span className="truncate text-xs text-slate-500">{task.assigneeName}</span>
-              </>
-            ) : (
-              <span className="text-xs text-slate-400">Unassigned</span>
-            )}
+            <AssigneeDisplay names={task.assigneeNames} compact />
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             {subtaskCount > 0 && (
@@ -224,11 +201,55 @@ export function KanbanCard({
         </div>
       </button>
 
-      {hasSubtasks && (
+      {hasSubtasks && !overlay && (
         <div className="px-3.5 pb-3.5">
           <SubtaskList task={task} hierarchyIndex={hierarchyIndex} />
         </div>
       )}
     </div>
   );
+}
+
+function SortableKanbanCard({ dragHidden, ...props }: KanbanCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: props.task.id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: isDragging ? undefined : CSS.Transform.toString(transform),
+        transition: isDragging ? undefined : transition,
+      }}
+      className={cn((dragHidden || isDragging) && "opacity-0")}
+    >
+      <KanbanCardView
+        {...props}
+        dragHandleProps={{
+          ref: setActivatorNodeRef,
+          attributes,
+          listeners,
+        }}
+      />
+    </div>
+  );
+}
+
+export function KanbanCard(props: KanbanCardProps) {
+  if (props.overlay) {
+    return (
+      <div className="w-[24rem] max-w-[85vw]">
+        <KanbanCardView {...props} />
+      </div>
+    );
+  }
+
+  return <SortableKanbanCard {...props} />;
 }

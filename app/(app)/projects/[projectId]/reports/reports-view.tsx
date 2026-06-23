@@ -9,6 +9,7 @@ import { AssigneeWorkloadChart } from "@/components/reports/assignee-workload-ch
 import { BurndownChart } from "@/components/reports/burndown-chart";
 import { ChartLegend } from "@/components/dashboard/chart-legend";
 import { CumulativeFlowChart } from "@/components/reports/cumulative-flow-chart";
+import { PlanGanttChart } from "@/components/reports/plan-gantt-chart";
 import { ProjectReportKpiGrid } from "@/components/reports/project-report-kpi-grid";
 import { ReportSection } from "@/components/reports/report-section";
 import { RiskIndicatorsPanel } from "@/components/reports/risk-indicators-panel";
@@ -191,6 +192,13 @@ export function ReportsView() {
                 <MilestoneProgressPanel milestones={report.milestones} />
               </ReportSection>
             </div>
+
+            <ReportSection
+              title="Project plan Gantt"
+              description="WBS schedule from the project plan — tasks, subtasks, dependencies, and milestones on a shared timeline."
+            >
+              <PlanGanttChart data={report.planGantt} />
+            </ReportSection>
 
             <ReportSection
               title="Standup participation"

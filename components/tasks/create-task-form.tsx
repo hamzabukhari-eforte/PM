@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import type { ProjectMember } from "@/lib/api/types";
 import type { LinkTarget, SubtaskFormItem } from "@/lib/utils/task-hierarchy";
+import { MemberMultiSelect } from "@/components/ui/member-multi-select";
 import { cn } from "@/lib/utils";
 
 const subtaskSchema: z.ZodType<SubtaskFormItem> = z.lazy(() =>
@@ -25,6 +26,7 @@ const subtaskSchema: z.ZodType<SubtaskFormItem> = z.lazy(() =>
     title: z.string().min(1, "Subtask title is required"),
     description: z.string().optional(),
     linkedTaskId: z.string().optional(),
+    assigneeIds: z.array(z.string()).optional(),
     subtasks: z.array(subtaskSchema).optional(),
   }),
 );
@@ -33,7 +35,7 @@ const schema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   storyPoints: z.string().optional(),
-  assigneeId: z.string().optional(),
+  assigneeIds: z.array(z.string()).optional(),
   subtasks: z.array(subtaskSchema).optional(),
 });
 
@@ -41,7 +43,7 @@ export type CreateTaskFormData = {
   title: string;
   description?: string;
   storyPoints?: string;
-  assigneeId?: string;
+  assigneeIds?: string[];
   subtasks?: SubtaskFormItem[];
 };
 
@@ -63,6 +65,7 @@ function SubtaskFieldRow({
   register,
   errors,
   linkTargets,
+  members,
   onRemove,
 }: {
   path: string;
@@ -72,6 +75,7 @@ function SubtaskFieldRow({
   register: UseFormRegister<CreateTaskFormData>;
   errors: FieldErrors<CreateTaskFormData>;
   linkTargets: LinkTarget[];
+  members: ProjectMember[];
   onRemove: () => void;
 }) {
   const childPath = `${path}.subtasks`;
@@ -80,6 +84,7 @@ function SubtaskFieldRow({
   const idPath = `${path}.id` as const;
   const descriptionPath = `${path}.description` as const;
   const linkPath = `${path}.linkedTaskId` as const;
+  const assigneesPath = `${path}.assigneeIds` as const;
 
   const topLevelIndex = Number(path.split(".")[1] ?? index);
   const rowErrors = depth === 0 ? errors.subtasks?.[topLevelIndex] : undefined;
@@ -107,6 +112,18 @@ function SubtaskFieldRow({
             placeholder="Description (optional)"
             className="text-sm"
             {...register(descriptionPath as "subtasks.0.description")}
+          />
+          <Controller
+            name={assigneesPath as "subtasks.0.assigneeIds"}
+            control={control}
+            render={({ field }) => (
+              <MemberMultiSelect
+                members={members}
+                value={field.value ?? []}
+                onChange={field.onChange}
+                placeholder="Assign subtask…"
+              />
+            )}
           />
           <Controller
             name={linkPath as "subtasks.0.linkedTaskId"}
@@ -140,6 +157,7 @@ function SubtaskFieldRow({
             register={register}
             errors={errors}
             linkTargets={linkTargets}
+            members={members}
           />
         </div>
         <Button
@@ -164,6 +182,7 @@ function SubtaskFieldList({
   register,
   errors,
   linkTargets,
+  members,
 }: {
   path: string;
   depth: number;
@@ -171,6 +190,7 @@ function SubtaskFieldList({
   register: UseFormRegister<CreateTaskFormData>;
   errors: FieldErrors<CreateTaskFormData>;
   linkTargets: LinkTarget[];
+  members: ProjectMember[];
 }) {
   const { fields, append, remove } = useFieldArray({
     control,
@@ -189,6 +209,7 @@ function SubtaskFieldList({
           register={register}
           errors={errors}
           linkTargets={linkTargets}
+          members={members}
           onRemove={() => remove(index)}
         />
       ))}
@@ -197,7 +218,7 @@ function SubtaskFieldList({
         variant="outline"
         size="sm"
         className="gap-1"
-        onClick={() => append({ title: "", description: "", subtasks: [] })}
+        onClick={() => append({ title: "", description: "", assigneeIds: [], subtasks: [] })}
       >
         <Plus className="h-3.5 w-3.5" />
         {depth === 0 ? "Add subtask" : "Add child"}
@@ -233,7 +254,7 @@ export function CreateTaskForm({
   } = useForm<CreateTaskFormData>({
     resolver: zodResolver(schema) as Resolver<CreateTaskFormData>,
     defaultValues: defaultValues ?? {
-      assigneeId: "unassigned",
+      assigneeIds: [],
       subtasks: [],
     },
   });
@@ -243,7 +264,7 @@ export function CreateTaskForm({
       onSubmit={handleSubmit((data) =>
         onSubmit({
           ...data,
-          assigneeId: data.assigneeId === "unassigned" ? undefined : data.assigneeId,
+          assigneeIds: data.assigneeIds?.length ? data.assigneeIds : undefined,
           subtasks: filterSubtasks(data.subtasks),
         }),
       )}
@@ -279,24 +300,16 @@ export function CreateTaskForm({
           />
         </div>
         <div className="space-y-2">
-          <Label>Assignee</Label>
+          <Label>Assignees</Label>
           <Controller
-            name="assigneeId"
+            name="assigneeIds"
             control={control}
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Unassigned" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {members.map((m) => (
-                    <SelectItem key={m.userId} value={m.userId}>
-                      {m.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <MemberMultiSelect
+                members={members}
+                value={field.value ?? []}
+                onChange={field.onChange}
+              />
             )}
           />
         </div>
@@ -316,6 +329,7 @@ export function CreateTaskForm({
           register={register}
           errors={errors}
           linkTargets={linkTargets}
+          members={members}
         />
       </div>
 

@@ -45,7 +45,7 @@ export function BoardView() {
         title="Kanban board"
         description="Drag cards between columns · click a task for details"
       />
-      <PageContent className="bg-transparent pt-4">
+      <PageContent className="min-w-0 bg-transparent pt-4">
         {isLoading && <LoadingState />}
         {isError && <ErrorState onRetry={() => void refetch()} />}
         {board && (

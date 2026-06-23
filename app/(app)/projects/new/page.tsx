@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { AppHeader } from "@/components/layout/app-header";
 import { PageContent } from "@/components/layout/page-content";
 import { ProjectForm, type ProjectFormData } from "@/components/projects/project-form";
 import { RoleGuard } from "@/components/auth/role-guard";
+import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type { CreateProjectInput, Project } from "@/lib/api/types";
@@ -59,13 +61,23 @@ export default function NewProjectPage() {
 
   return (
     <RoleGuard roles={["admin"]} fallback={<p className="p-8 text-destructive">Access denied.</p>}>
-      <AppHeader title="Create project" />
+      <AppHeader
+        title="Create project"
+        description="Add the basics now — fill in advanced details later if you need them."
+        actions={
+          <Button variant="outline" asChild>
+            <Link href="/projects/">Cancel</Link>
+          </Button>
+        }
+      />
       <PageContent width="form">
         <ProjectForm
+          mode="create"
           onSubmit={(data) => mutation.mutate(data)}
           onSaveDraft={(data) => draftMutation.mutate(data)}
+          onCancel={() => router.push("/projects/")}
           loading={mutation.isPending || draftMutation.isPending}
-          submitLabel="Save project"
+          submitLabel="Create project"
         />
       </PageContent>
     </RoleGuard>

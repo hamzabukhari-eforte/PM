@@ -19,6 +19,7 @@ export type SubtaskFormItem = {
   title: string;
   description?: string;
   linkedTaskId?: string;
+  assigneeIds?: string[];
   subtasks?: SubtaskFormItem[];
 };
 
@@ -280,6 +281,7 @@ export function subtasksToFormData(subtasks: SubTask[] | undefined): SubtaskForm
     title: sub.title,
     description: sub.description,
     linkedTaskId: sub.linkedTaskId ?? undefined,
+    assigneeIds: sub.assigneeIds?.length ? [...sub.assigneeIds] : [],
     subtasks: sub.subtasks?.length ? subtasksToFormData(sub.subtasks) : [],
   }));
 }
@@ -289,6 +291,7 @@ export function formSubtasksToCreateInput(subtasks: SubtaskFormItem[]): CreateSu
     title: sub.title,
     description: sub.description,
     linkedTaskId: sub.linkedTaskId ?? null,
+    assigneeIds: sub.assigneeIds?.length ? sub.assigneeIds : undefined,
     subtasks: sub.subtasks?.length ? formSubtasksToCreateInput(sub.subtasks) : undefined,
   }));
 }

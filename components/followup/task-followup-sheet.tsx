@@ -34,6 +34,7 @@ import type {
   TaskFollowupContext,
   TaskFollowupInput,
 } from "@/lib/api/types";
+import { formatAssigneeNames } from "@/lib/utils/task-assignees";
 import { isoToTicketDateTimeLocal } from "@/lib/utils/ticket-datetime";
 
 function ReadOnlyField({ label, value }: { label: string; value: string }) {
@@ -208,7 +209,7 @@ export function TaskFollowupSheet({
               <section className="grid grid-cols-2 gap-4 rounded-xl border border-slate-100 bg-slate-50/50 p-4">
                 <ReadOnlyField label="Project" value={ctx.projectName ?? "—"} />
                 <ReadOnlyField label="Assign by" value={ctx.assignByName ?? "—"} />
-                <ReadOnlyField label="Assign to" value={task.assigneeName ?? "Unassigned"} />
+                <ReadOnlyField label="Assign to" value={formatAssigneeNames(task.assigneeNames)} />
                 <ReadOnlyField
                   label="Timeline"
                   value={

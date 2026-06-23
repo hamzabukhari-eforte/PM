@@ -6,9 +6,11 @@ import { format } from "date-fns";
 import { AppHeader } from "@/components/layout/app-header";
 import { PageContent } from "@/components/layout/page-content";
 import { AddPersonalTaskDialog } from "@/components/tasks/add-personal-task-dialog";
+import { PersonalTaskTable } from "@/components/tasks/personal-task-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ViewModeToggle } from "@/components/ui/view-mode-toggle";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiClient } from "@/lib/api/client";
@@ -19,11 +21,13 @@ import type {
   TaskStatus,
   User,
 } from "@/lib/api/types";
+import { useViewMode } from "@/lib/hooks/use-view-mode";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { canManagePersonalTasks } from "@/lib/utils/roles";
 import { recurrenceLabels } from "@/lib/utils/routine";
 import { isoToTicketDateTimeLocal } from "@/lib/utils/ticket-datetime";
 import { cn } from "@/lib/utils";
+import { formatAssigneeNames, taskIsAssignedTo } from "@/lib/utils/task-assignees";
 
 const statusFlow: TaskStatus[] = ["todo", "in_progress", "review", "done"];
 const statusLabels: Record<TaskStatus, string> = {
@@ -60,9 +64,9 @@ function PersonalTaskCard({
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-          {task.assigneeName && (
+          {task.assigneeNames.length > 0 && (
             <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-700">
-              {task.assigneeName}
+              {formatAssigneeNames(task.assigneeNames)}
             </span>
           )}
           {task.storyPoints != null && (
@@ -110,6 +114,8 @@ function TaskListSection({
   creating,
   onStatusChange,
   currentUserId,
+  viewMode,
+  onViewModeChange,
 }: {
   kind: "miscellaneous" | "routine";
   tasks: Task[] | undefined;
@@ -120,6 +126,8 @@ function TaskListSection({
   creating: boolean;
   onStatusChange: (taskId: string, status: TaskStatus) => void;
   currentUserId?: string;
+  viewMode: "cards" | "table";
+  onViewModeChange: (mode: "cards" | "table") => void;
 }) {
   const description =
     kind === "routine"
@@ -130,26 +138,40 @@ function TaskListSection({
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <p className="text-sm text-slate-500">{description}</p>
-        {isAdmin && (
-          <AddPersonalTaskDialog
-            kind={kind}
-            assignees={assignees}
-            onSubmit={onCreate}
-            loading={creating}
-          />
-        )}
+        <div className="flex flex-wrap items-center justify-end gap-2 sm:shrink-0">
+          {isAdmin && (
+            <AddPersonalTaskDialog
+              kind={kind}
+              assignees={assignees}
+              onSubmit={onCreate}
+              loading={creating}
+            />
+          )}
+          <ViewModeToggle value={viewMode} onChange={onViewModeChange} />
+        </div>
       </div>
       {loading && <LoadingState />}
-      <div className={cn("grid gap-4 md:grid-cols-2 xl:grid-cols-3", tasks?.length ? "" : "hidden")}>
-        {tasks?.map((task) => (
-          <PersonalTaskCard
-            key={task.id}
-            task={task}
-            canUpdate={isAdmin || task.assigneeId === currentUserId}
+      {viewMode === "cards" ? (
+        <div className={cn("grid gap-4 md:grid-cols-2 xl:grid-cols-3", tasks?.length ? "" : "hidden")}>
+          {tasks?.map((task) => (
+            <PersonalTaskCard
+              key={task.id}
+              task={task}
+              canUpdate={isAdmin || taskIsAssignedTo(task, currentUserId)}
+              onStatusChange={onStatusChange}
+            />
+          ))}
+        </div>
+      ) : (
+        tasks && tasks.length > 0 && (
+          <PersonalTaskTable
+            tasks={tasks}
+            canUpdate={isAdmin}
             onStatusChange={onStatusChange}
+            currentUserId={currentUserId}
           />
-        ))}
-      </div>
+        )
+      )}
       {!loading && tasks?.length === 0 && (
         <p className="rounded-xl border border-dashed border-slate-200 py-12 text-center text-sm text-slate-400">
           {isAdmin
@@ -165,6 +187,7 @@ export function TasksView() {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const isAdmin = canManagePersonalTasks(user?.role);
+  const [viewMode, setViewMode] = useViewMode("tasks-view-mode");
 
   const assigneesQuery = useQuery({
     queryKey: ["users"],
@@ -239,6 +262,8 @@ export function TasksView() {
               creating={createMutation.isPending}
               onStatusChange={(id, status) => statusMutation.mutate({ taskId: id, status })}
               currentUserId={user?.id}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
             />
           </TabsContent>
 
@@ -253,6 +278,8 @@ export function TasksView() {
               creating={createMutation.isPending}
               onStatusChange={(id, status) => statusMutation.mutate({ taskId: id, status })}
               currentUserId={user?.id}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
             />
           </TabsContent>
         </Tabs>

@@ -38,7 +38,7 @@ export function EditTaskDialog({
     title: task.title,
     description: task.description,
     storyPoints: task.storyPoints != null ? String(task.storyPoints) : "",
-    assigneeId: task.assigneeId ?? "unassigned",
+    assigneeIds: task.assigneeIds?.length ? [...task.assigneeIds] : [],
     subtasks: subtasksToFormData(task.subtasks),
   };
 

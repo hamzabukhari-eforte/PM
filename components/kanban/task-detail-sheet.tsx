@@ -5,6 +5,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-
 import { CSS } from "@dnd-kit/utilities";
 import { Clock, GripVertical, Link2, Pencil, ClipboardList } from "lucide-react";
 import type { SubTask, Task } from "@/lib/api/types";
+import { AssigneeDisplay } from "@/components/tasks/assignee-display";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -321,10 +322,8 @@ export function TaskDetailSheet({
 
         <SheetBody className="space-y-8">
           <section className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <MetaItem label="Assignee">
-              {task.assigneeName ?? (
-                <span className="text-slate-400">Unassigned</span>
-              )}
+            <MetaItem label="Assignees">
+              <AssigneeDisplay names={task.assigneeNames} />
             </MetaItem>
             <MetaItem label="Story points">
               {task.storyPoints != null ? (
