@@ -3,25 +3,18 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { ChevronRight, Download, Flag, Plus } from "lucide-react";
+import { ChevronRight, Download, Plus } from "lucide-react";
 import { AppHeader } from "@/components/layout/app-header";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
 import { ErrorState } from "@/components/ui/error-state";
-import { Badge } from "@/components/ui/badge";
 import { PlanTaskDialog } from "@/components/plan/plan-task-dialog";
+import { PlanWbsTable } from "@/components/plan/plan-wbs-table";
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
-import type { PlanTask, Project, ProjectMember, ProjectPlan } from "@/lib/api/types";
-import { isoToTicketDateTimeLocal } from "@/lib/utils/ticket-datetime";
-import { memberNamesFromIds } from "@/lib/utils/task-assignees";
+import type { PlanTask, Project, ProjectPlan } from "@/lib/api/types";
 import { downloadPlanCsv, flattenPlanForTable } from "@/lib/utils/plan-export";
 import { useProjectMembers } from "@/lib/hooks/use-project-members";
-
-function formatDate(iso: string | null) {
-  if (!iso) return "—";
-  return isoToTicketDateTimeLocal(iso);
-}
 
 export function ProjectPlanView({ projectId }: { projectId: string }) {
   const queryClient = useQueryClient();
@@ -62,9 +55,10 @@ export function ProjectPlanView({ projectId }: { projectId: string }) {
     [plan],
   );
 
-  const taskTitlesByCode = useMemo(() => {
-    return new Map(tableRows.map(({ node }) => [node.code, node.title] as const));
-  }, [tableRows]);
+  const taskTitlesByCode = useMemo(
+    () => new Map(tableRows.map(({ node }) => [node.code, node.title] as const)),
+    [tableRows],
+  );
 
   function openAdd(parent: string | null) {
     setEditingNode(null);
@@ -122,41 +116,12 @@ export function ProjectPlanView({ projectId }: { projectId: string }) {
               </div>
             </div>
 
-            <div className="scrollbar-hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
-              <table className="w-full min-w-[960px] border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50/90 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    <th className="px-4 py-3 w-32">Code</th>
-                    <th className="px-4 py-3">Description</th>
-                    <th className="px-4 py-3 w-44">Start</th>
-                    <th className="px-4 py-3 w-44">End</th>
-                    <th className="px-4 py-3 w-40">Assign to</th>
-                    <th className="px-4 py-3 w-36">Milestone</th>
-                    <th className="px-4 py-3 w-40">Depends on</th>
-                    <th className="px-4 py-3 w-20 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="text-[14px] text-slate-700">
-                  {tableRows.length === 0 && (
-                    <tr>
-                      <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
-                        No plan tasks yet. Add tasks to build the WBS.
-                      </td>
-                    </tr>
-                  )}
-                  {tableRows.map(({ node, depth }) => (
-                    <PlanTableRow
-                      key={node.id}
-                      node={node}
-                      depth={depth}
-                      members={members}
-                      taskTitlesByCode={taskTitlesByCode}
-                      onEdit={openEdit}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <PlanWbsTable
+              rows={tableRows}
+              members={members}
+              taskTitlesByCode={taskTitlesByCode}
+              onEdit={openEdit}
+            />
           </>
         )}
       </div>
@@ -174,89 +139,5 @@ export function ProjectPlanView({ projectId }: { projectId: string }) {
         />
       )}
     </>
-  );
-}
-
-function PlanTableRow({
-  node,
-  depth,
-  members,
-  taskTitlesByCode,
-  onEdit,
-}: {
-  node: PlanTask;
-  depth: number;
-  members: ProjectMember[];
-  taskTitlesByCode: Map<string, string>;
-  onEdit: (node: PlanTask) => void;
-}) {
-  const assigneeNames = memberNamesFromIds(node.memberIds, members);
-  const dependencyTitle = node.dependentTaskCode
-    ? taskTitlesByCode.get(node.dependentTaskCode)
-    : null;
-
-  return (
-    <tr className="border-b border-slate-100 transition-colors hover:bg-indigo-50/30">
-      <td
-        className="w-32 py-3 px-4 align-middle font-mono text-[14px] font-semibold tabular-nums text-indigo-600 whitespace-nowrap"
-      >
-        {node.code}
-      </td>
-      <td className="px-4 py-3 align-middle">
-        <p className="font-medium text-slate-900">{node.title}</p>
-        {node.description && (
-          <p className="mt-0.5 leading-relaxed text-slate-500">{node.description}</p>
-        )}
-      </td>
-      <td className="px-4 py-3 align-middle whitespace-nowrap text-slate-600">
-        {formatDate(node.timelineStart)}
-      </td>
-      <td className="px-4 py-3 align-middle whitespace-nowrap text-slate-600">
-        {formatDate(node.timelineEnd)}
-      </td>
-      <td className="px-4 py-3 align-middle text-slate-700">
-        {assigneeNames.length > 0 ? assigneeNames.join(", ") : "—"}
-      </td>
-      <td className="px-4 py-3 align-middle">
-        {node.isMilestone ? (
-          <div className="space-y-0.5">
-            <Badge variant="secondary" className="gap-1 text-[12px]">
-              <Flag className="h-3 w-3" />
-              {node.milestoneNo ?? "Milestone"}
-            </Badge>
-            {node.milestoneDescription && (
-              <p className="text-slate-500">{node.milestoneDescription}</p>
-            )}
-          </div>
-        ) : (
-          <span className="text-slate-400">—</span>
-        )}
-      </td>
-      <td className="px-4 py-3 align-middle">
-        {node.isDependent && node.dependentTaskCode ? (
-          <div className="space-y-0.5">
-            <Badge variant="outline" className="font-mono text-[12px]">
-              {node.dependentTaskCode}
-            </Badge>
-            {dependencyTitle && (
-              <p className="text-slate-500">{dependencyTitle}</p>
-            )}
-          </div>
-        ) : (
-          <span className="text-slate-400">—</span>
-        )}
-      </td>
-      <td className="px-4 py-3 align-middle text-right">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-8 cursor-pointer"
-          onClick={() => onEdit(node)}
-        >
-          Edit
-        </Button>
-      </td>
-    </tr>
   );
 }

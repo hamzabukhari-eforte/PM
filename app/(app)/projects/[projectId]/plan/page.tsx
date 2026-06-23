@@ -1,5 +1,5 @@
 import { projectStaticParams } from "@/lib/static-paths";
-import { ProjectPlanPageView } from "./plan-page-view";
+import { ProjectPlanPageView } from "@/components/plan/plan-page-view";
 
 export function generateStaticParams() {
   return projectStaticParams();

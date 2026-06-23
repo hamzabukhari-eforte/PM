@@ -1,6 +1,6 @@
 import { StandupGate } from "@/components/standup/standup-gate";
 import { sprintStaticParams } from "@/lib/static-paths";
-import { BoardView } from "./board-view";
+import { BoardView } from "@/components/kanban/board-view";
 
 export function generateStaticParams() {
   return sprintStaticParams();

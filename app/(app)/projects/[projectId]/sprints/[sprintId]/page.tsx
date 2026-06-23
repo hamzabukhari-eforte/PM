@@ -1,5 +1,5 @@
 import { sprintStaticParams } from "@/lib/static-paths";
-import { SprintDetailView } from "./sprint-detail-view";
+import { SprintDetailView } from "@/components/sprints/sprint-detail-view";
 
 export function generateStaticParams() {
   return sprintStaticParams();

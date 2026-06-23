@@ -1,5 +1,5 @@
 import { projectStaticParams } from "@/lib/static-paths";
-import { TeamView } from "./team-view";
+import { TeamView } from "@/components/team/team-view";
 
 export function generateStaticParams() {
   return projectStaticParams();

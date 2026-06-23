@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { LoadingState } from "@/components/ui/loading-state";
-import { StandupView } from "./standup-view";
+import { StandupView } from "@/components/standup/standup-view";
 
 export default function StandupPage() {
   return (

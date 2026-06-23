@@ -1,5 +1,5 @@
 import { projectStaticParams } from "@/lib/static-paths";
-import { ProjectDetailView } from "./project-detail-view";
+import { ProjectDetailView } from "@/components/projects/project-detail-view";
 
 export function generateStaticParams() {
   return projectStaticParams();

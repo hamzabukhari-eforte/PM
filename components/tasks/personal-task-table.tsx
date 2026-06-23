@@ -9,13 +9,7 @@ import { recurrenceLabels } from "@/lib/utils/routine";
 import { formatAssigneeNames, taskIsAssignedTo } from "@/lib/utils/task-assignees";
 import { isoToTicketDateTimeLocal } from "@/lib/utils/ticket-datetime";
 
-const statusFlow: TaskStatus[] = ["todo", "in_progress", "review", "done"];
-const statusLabels: Record<TaskStatus, string> = {
-  todo: "To do",
-  in_progress: "In progress",
-  review: "Review",
-  done: "Done",
-};
+import { personalTaskStatusFlow, personalTaskStatusLabels } from "@/lib/utils/personal-task-status";
 
 export function PersonalTaskTable({
   tasks,
@@ -43,8 +37,8 @@ export function PersonalTaskTable({
         </thead>
         <tbody className="text-slate-700">
           {tasks.map((task) => {
-            const nextIdx = statusFlow.indexOf(task.status) + 1;
-            const nextStatus = nextIdx < statusFlow.length ? statusFlow[nextIdx] : null;
+            const nextIdx = personalTaskStatusFlow.indexOf(task.status) + 1;
+            const nextStatus = nextIdx < personalTaskStatusFlow.length ? personalTaskStatusFlow[nextIdx] : null;
             const userCanUpdate = canUpdate || taskIsAssignedTo(task, currentUserId);
 
             return (
@@ -66,7 +60,7 @@ export function PersonalTaskTable({
                 </td>
                 <td className="px-4 py-3 align-middle">
                   <Badge variant="secondary" className="capitalize">
-                    {statusLabels[task.status]}
+                    {personalTaskStatusLabels[task.status]}
                   </Badge>
                 </td>
                 <td className="px-4 py-3 align-middle whitespace-nowrap">
@@ -94,7 +88,7 @@ export function PersonalTaskTable({
                       className="h-8"
                       onClick={() => onStatusChange(task.id, nextStatus)}
                     >
-                      → {statusLabels[nextStatus]}
+                      → {personalTaskStatusLabels[nextStatus]}
                     </Button>
                   ) : (
                     <span className="text-sm text-slate-400">—</span>
