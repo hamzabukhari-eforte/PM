@@ -1,0 +1,28 @@
+{
+  "rewrites": [
+    {
+      "source": "/projects/:projectId((?!proj-1|proj-2|proj-3|placeholder|new)[^/]+)/",
+      "destination": "/projects/placeholder/?id=:projectId"
+    },
+    {
+      "source": "/projects/:projectId((?!proj-1|proj-2|proj-3|placeholder|new)[^/]+)/:section(plan|team|reports|settings|sprints)/",
+      "destination": "/projects/placeholder/:section/?id=:projectId"
+    },
+    {
+      "source": "/projects/:projectId((?!proj-1|proj-2|proj-3|placeholder|new)[^/]+)/sprints/:sprintId((?!sprint-1a|sprint-1b|sprint-1c|sprint-2a|sprint-3a|placeholder)[^/]+)/",
+      "destination": "/projects/placeholder/sprints/placeholder/?id=:projectId&sprintId=:sprintId"
+    },
+    {
+      "source": "/projects/:projectId((?!proj-1|proj-2|proj-3|placeholder|new)[^/]+)/sprints/:sprintId((?!sprint-1a|sprint-1b|sprint-1c|sprint-2a|sprint-3a|placeholder)[^/]+)/board/",
+      "destination": "/projects/placeholder/sprints/placeholder/board/?id=:projectId&sprintId=:sprintId"
+    },
+    {
+      "source": "/projects/:projectId(proj-1|proj-2|proj-3|placeholder)/sprints/:sprintId((?!sprint-1a|sprint-1b|sprint-1c|sprint-2a|sprint-3a|placeholder)[^/]+)/",
+      "destination": "/projects/:projectId/sprints/placeholder/?sprintId=:sprintId"
+    },
+    {
+      "source": "/projects/:projectId(proj-1|proj-2|proj-3|placeholder)/sprints/:sprintId((?!sprint-1a|sprint-1b|sprint-1c|sprint-2a|sprint-3a|placeholder)[^/]+)/board/",
+      "destination": "/projects/:projectId/sprints/placeholder/board/?sprintId=:sprintId"
+    }
+  ]
+}

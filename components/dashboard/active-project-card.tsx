@@ -6,13 +6,14 @@ import type { ActiveProjectSummary } from "@/lib/api/types";
 import { BoardQuickLinkOutline } from "@/components/layout/board-quick-link";
 import { statusLabels, statusStyles } from "@/lib/dashboard-status";
 import { cn } from "@/lib/utils";
+import { projectHref } from "@/lib/utils/static-routes";
 
 export function ActiveProjectCard({ project }: { project: ActiveProjectSummary }) {
   const styles = statusStyles[project.status];
 
   return (
     <div className="card-interactive rounded-2xl border border-slate-200/80 bg-white p-5">
-      <Link href={`/projects/${project.projectId}/`} className="block">
+      <Link href={projectHref(project.projectId)} className="block">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="truncate text-lg font-semibold text-slate-900">{project.name}</h3>

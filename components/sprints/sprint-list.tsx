@@ -5,6 +5,7 @@ import type { Sprint } from "@/lib/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { sprintHref } from "@/lib/utils/static-routes";
 
 const statusVariant: Record<Sprint["status"], "success" | "default" | "secondary"> = {
   active: "success",
@@ -35,7 +36,7 @@ export function SprintList({
             <div>
               <CardTitle className="text-lg">
                 <Link
-                  href={`/projects/${projectId}/sprints/${sprint.id}/`}
+                  href={sprintHref(projectId, sprint.id)}
                   className="transition-colors hover:text-primary"
                 >
                   {sprint.name}
@@ -51,7 +52,7 @@ export function SprintList({
             </p>
             <div className="flex gap-2">
               <Link
-                href={`/projects/${projectId}/sprints/${sprint.id}/board/`}
+                href={sprintHref(projectId, sprint.id, "board/")}
                 className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 px-3 text-xs font-semibold text-white shadow-sm shadow-indigo-500/20 transition-all duration-200 hover:brightness-110 hover:shadow-md active:scale-[0.98]"
               >
                 Open board

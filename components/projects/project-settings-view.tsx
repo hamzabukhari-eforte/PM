@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
@@ -14,11 +13,12 @@ import { RoleGuard } from "@/components/auth/role-guard";
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type { Project, ProjectPlan } from "@/lib/api/types";
+import { useResolvedProjectId } from "@/lib/hooks/use-route-ids";
 import { useUiStore } from "@/lib/stores/ui-store";
+import { projectHref } from "@/lib/utils/static-routes";
 
 export function ProjectSettingsView() {
-  const params = useParams<{ projectId: string }>();
-  const projectId = params.projectId;
+  const projectId = useResolvedProjectId();
   const queryClient = useQueryClient();
   const setActiveProjectId = useUiStore((s) => s.setActiveProjectId);
 
@@ -60,7 +60,7 @@ export function ProjectSettingsView() {
       />
       <PageContent width="form">
         <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-          <Link href={`/projects/${projectId}/`} className="hover:text-primary">
+          <Link href={projectHref(projectId)} className="hover:text-primary">
             Project
           </Link>
           <ChevronRight className="h-4 w-4" />
@@ -106,7 +106,7 @@ export function ProjectSettingsView() {
 
         <div className="mt-6">
           <Button variant="outline" asChild>
-            <Link href={`/projects/${projectId}/`}>Back to project</Link>
+            <Link href={projectHref(projectId)}>Back to project</Link>
           </Button>
         </div>
       </PageContent>

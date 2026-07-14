@@ -1,6 +1,5 @@
 "use client";
 
-import { useParams } from "next/navigation";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppHeader } from "@/components/layout/app-header";
@@ -12,12 +11,13 @@ import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type { Board } from "@/lib/api/types";
 import { useProjectMembers } from "@/lib/hooks/use-project-members";
+import { useResolvedProjectId, useResolvedSprintId } from "@/lib/hooks/use-route-ids";
 import { useUiStore } from "@/lib/stores/ui-store";
 import { boardPath } from "@/lib/hooks/use-project-board";
 
 export function BoardView() {
-  const params = useParams<{ projectId: string; sprintId: string }>();
-  const { projectId, sprintId } = params;
+  const projectId = useResolvedProjectId();
+  const sprintId = useResolvedSprintId();
   const setLastBoard = useUiStore((s) => s.setLastBoard);
   const setActiveProjectId = useUiStore((s) => s.setActiveProjectId);
 

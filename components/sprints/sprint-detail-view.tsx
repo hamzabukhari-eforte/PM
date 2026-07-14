@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppHeader } from "@/components/layout/app-header";
 import { AddTaskDialog } from "@/components/tasks/add-task-dialog";
@@ -20,11 +19,13 @@ import {
   defaultTodoColumnId,
   useProjectMembers,
 } from "@/lib/hooks/use-project-members";
+import { useResolvedProjectId, useResolvedSprintId } from "@/lib/hooks/use-route-ids";
 import { buildLinkTargets } from "@/lib/utils/task-hierarchy";
+import { sprintHref } from "@/lib/utils/static-routes";
 
 export function SprintDetailView() {
-  const params = useParams<{ projectId: string; sprintId: string }>();
-  const { projectId, sprintId } = params;
+  const projectId = useResolvedProjectId();
+  const sprintId = useResolvedSprintId();
   const queryClient = useQueryClient();
 
   const sprintQuery = useQuery({
@@ -92,7 +93,7 @@ export function SprintDetailView() {
                 {sprint.startDate} → {sprint.endDate}
               </p>
               <Button asChild>
-                <Link href={`/projects/${projectId}/sprints/${sprintId}/board/`}>
+                <Link href={sprintHref(projectId, sprintId, "board/")}>
                   Open board
                 </Link>
               </Button>

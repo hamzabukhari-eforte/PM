@@ -12,6 +12,7 @@ import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type { CreateProjectInput, Project } from "@/lib/api/types";
 import { ticketDateLocalToIsoDate } from "@/lib/utils/ticket-datetime";
+import { projectHref } from "@/lib/utils/static-routes";
 
 function toCreateInput(data: ProjectFormData): CreateProjectInput {
   return {
@@ -47,7 +48,7 @@ export default function NewProjectPage() {
         method: "POST",
         body: JSON.stringify(toCreateInput(data)),
       }),
-    onSuccess: (project) => router.push(`/projects/${project.id}/`),
+    onSuccess: (project) => router.push(projectHref(project.id)),
   });
 
   const draftMutation = useMutation({
@@ -56,7 +57,7 @@ export default function NewProjectPage() {
         method: "POST",
         body: JSON.stringify({ ...toCreateInput(data), isDraft: true }),
       }),
-    onSuccess: (project) => router.push(`/projects/${project.id}/`),
+    onSuccess: (project) => router.push(projectHref(project.id)),
   });
 
   return (

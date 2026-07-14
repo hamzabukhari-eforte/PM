@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { projectHref } from "@/lib/utils/static-routes";
 
 export function ProjectCard({
   project,
@@ -15,11 +16,13 @@ export function ProjectCard({
   project: Project;
   onArchive?: () => void;
 }) {
+  const href = projectHref(project.id);
+
   return (
     <Card className={cn("card-interactive overflow-hidden border-slate-200/80")}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
-          <Link href={`/projects/${project.id}/`} className="min-w-0 flex-1">
+          <Link href={href} className="min-w-0 flex-1">
             <CardTitle className="text-lg leading-snug transition-colors hover:text-primary">
               {project.name}
             </CardTitle>
@@ -41,7 +44,7 @@ export function ProjectCard({
             )}
           </div>
         </div>
-        <Link href={`/projects/${project.id}/`}>
+        <Link href={href}>
           <CardDescription className="line-clamp-2 hover:text-foreground/80">
             {project.description}
           </CardDescription>
@@ -52,7 +55,7 @@ export function ProjectCard({
         <div className="flex gap-2">
           <BoardQuickLinkOutline projectId={project.id} />
           <Button variant="ghost" size="sm" asChild>
-            <Link href={`/projects/${project.id}/`}>Overview</Link>
+            <Link href={href}>Overview</Link>
           </Button>
         </div>
       </CardContent>

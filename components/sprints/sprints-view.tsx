@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppHeader } from "@/components/layout/app-header";
 import { SprintList } from "@/components/sprints/sprint-list";
@@ -14,12 +13,12 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type { Sprint } from "@/lib/api/types";
+import { useResolvedProjectId } from "@/lib/hooks/use-route-ids";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { canManageSprints } from "@/lib/utils/roles";
 
 export function SprintsView() {
-  const params = useParams<{ projectId: string }>();
-  const projectId = params.projectId;
+  const projectId = useResolvedProjectId();
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const [tab, setTab] = useState("active");

@@ -5,6 +5,7 @@ import { ArrowRight, LayoutGrid } from "lucide-react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { useProjectBoard } from "@/lib/hooks/use-project-board";
 import { cn } from "@/lib/utils";
+import { projectHref } from "@/lib/utils/static-routes";
 
 const boardLinkVariants = cva(
   "inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98]",
@@ -45,7 +46,7 @@ export function BoardQuickLink({
   showArrow?: boolean;
 }) {
   const { boardUrl, sprintsUrl, sprint, isLoading } = useProjectBoard(projectId);
-  const href = boardUrl ?? sprintsUrl ?? `/projects/${projectId}/`;
+  const href = boardUrl ?? sprintsUrl ?? projectHref(projectId);
 
   return (
     <Link
@@ -67,7 +68,7 @@ export function BoardQuickLinkOutline({
   className?: string;
 }) {
   const { boardUrl, sprintsUrl } = useProjectBoard(projectId);
-  const href = boardUrl ?? sprintsUrl ?? `/projects/${projectId}/`;
+  const href = boardUrl ?? sprintsUrl ?? projectHref(projectId);
 
   return (
     <Link

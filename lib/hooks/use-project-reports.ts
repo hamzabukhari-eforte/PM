@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type { ProjectReportsSummary, Sprint, StandupEntry } from "@/lib/api/types";
+import { useResolvedProjectId } from "@/lib/hooks/use-route-ids";
 import { useUiStore } from "@/lib/stores/ui-store";
 
 export function useProjectReports() {
-  const params = useParams<{ projectId: string }>();
-  const projectId = params.projectId;
+  const projectId = useResolvedProjectId();
   const setActiveProjectId = useUiStore((s) => s.setActiveProjectId);
   const [sprintId, setSprintId] = useState("");
 

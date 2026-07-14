@@ -15,6 +15,7 @@ import { endpoints } from "@/lib/api/endpoints";
 import type { PlanTask, Project, ProjectPlan } from "@/lib/api/types";
 import { downloadPlanCsv, flattenPlanForTable } from "@/lib/utils/plan-export";
 import { useProjectMembers } from "@/lib/hooks/use-project-members";
+import { projectHref } from "@/lib/utils/static-routes";
 
 export function ProjectPlanView({ projectId }: { projectId: string }) {
   const queryClient = useQueryClient();
@@ -82,7 +83,7 @@ export function ProjectPlanView({ projectId }: { projectId: string }) {
       <AppHeader title={projectQuery.data ? `${projectQuery.data.name} — Plan` : "Project plan"} />
       <div className="space-y-6 p-6 lg:p-8">
         <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-          <Link href={`/projects/${projectId}/`} className="hover:text-primary">
+          <Link href={projectHref(projectId)} className="hover:text-primary">
             Project
           </Link>
           <ChevronRight className="h-4 w-4" />
@@ -107,7 +108,7 @@ export function ProjectPlanView({ projectId }: { projectId: string }) {
                   Export CSV
                 </Button>
                 <Button variant="outline" asChild>
-                  <Link href={`/projects/${projectId}/sprints/`}>View sprints</Link>
+                  <Link href={projectHref(projectId, "sprints/")}>View sprints</Link>
                 </Button>
                 <Button className="gap-1.5" onClick={() => openAdd(null)}>
                   <Plus className="h-4 w-4" />

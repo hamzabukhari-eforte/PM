@@ -1,6 +1,5 @@
 "use client";
 
-import { useParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart3, ClipboardList, Settings, Users } from "lucide-react";
@@ -18,15 +17,16 @@ import { ErrorState } from "@/components/ui/error-state";
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type { Project, ProjectLookups, ProjectPlan, Sprint } from "@/lib/api/types";
+import { useResolvedProjectId } from "@/lib/hooks/use-route-ids";
 import { useUiStore } from "@/lib/stores/ui-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { canManageProjects, canManageTeam } from "@/lib/utils/roles";
 import { countPlanTasks } from "@/lib/utils/project-lookups";
+import { projectHref } from "@/lib/utils/static-routes";
 import { cn } from "@/lib/utils";
 
 export function ProjectDetailView() {
-  const params = useParams<{ projectId: string }>();
-  const projectId = params.projectId;
+  const projectId = useResolvedProjectId();
   const setActiveProjectId = useUiStore((s) => s.setActiveProjectId);
   const user = useAuthStore((s) => s.user);
   const canManage = canManageTeam(user?.role);
@@ -87,26 +87,26 @@ export function ProjectDetailView() {
             />
             <div className={cn("grid gap-4", canSettings ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3")}>
               <ProjectQuickLinkCard
-                href={`/projects/${projectId}/plan/`}
+                href={projectHref(projectId, "plan/")}
                 icon={ClipboardList}
                 title="Project plan"
                 description="Work breakdown & milestones"
               />
               <ProjectQuickLinkCard
-                href={`/projects/${projectId}/team/`}
+                href={projectHref(projectId, "team/")}
                 icon={Users}
                 title="Team"
                 description={canManage ? "Manage members" : "View members"}
               />
               <ProjectQuickLinkCard
-                href={`/projects/${projectId}/reports/`}
+                href={projectHref(projectId, "reports/")}
                 icon={BarChart3}
                 title="Reports"
                 description="Burndown, velocity & metrics"
               />
               {canSettings && (
                 <ProjectQuickLinkCard
-                  href={`/projects/${projectId}/settings/`}
+                  href={projectHref(projectId, "settings/")}
                   icon={Settings}
                   title="Settings"
                   description="Permissions & plan options"

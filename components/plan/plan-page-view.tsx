@@ -1,9 +1,9 @@
 "use client";
 
-import { useParams } from "next/navigation";
 import { ProjectPlanView } from "@/components/plan/project-plan-view";
+import { useResolvedProjectId } from "@/lib/hooks/use-route-ids";
 
 export function ProjectPlanPageView() {
-  const params = useParams<{ projectId: string }>();
-  return <ProjectPlanView projectId={params.projectId} />;
+  const projectId = useResolvedProjectId();
+  return <ProjectPlanView projectId={projectId} />;
 }

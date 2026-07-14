@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type { Sprint } from "@/lib/api/types";
+import { projectHref, sprintHref } from "@/lib/utils/static-routes";
 
 export function pickPreferredSprint(sprints: Sprint[]): Sprint | null {
   if (sprints.length === 0) return null;
@@ -11,7 +12,7 @@ export function pickPreferredSprint(sprints: Sprint[]): Sprint | null {
 }
 
 export function boardPath(projectId: string, sprintId: string) {
-  return `/projects/${projectId}/sprints/${sprintId}/board/`;
+  return sprintHref(projectId, sprintId, "board/");
 }
 
 export function useProjectBoard(projectId: string | null | undefined) {
@@ -27,7 +28,7 @@ export function useProjectBoard(projectId: string | null | undefined) {
   return {
     sprint,
     boardUrl: sprint && projectId ? boardPath(projectId, sprint.id) : null,
-    sprintsUrl: projectId ? `/projects/${projectId}/sprints/` : null,
+    sprintsUrl: projectId ? projectHref(projectId, "sprints/") : null,
     isLoading: query.isLoading,
   };
 }

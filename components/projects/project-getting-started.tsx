@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CheckCircle2, Circle, LayoutGrid, ListTodo, Rocket } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { projectHref } from "@/lib/utils/static-routes";
 
 export function ProjectGettingStarted({
   projectId,
@@ -21,7 +22,7 @@ export function ProjectGettingStarted({
       done: planTaskCount > 0,
       title: "Build your plan",
       description: "Add tasks and milestones to the work breakdown schedule.",
-      href: `/projects/${projectId}/plan/`,
+      href: projectHref(projectId, "plan/"),
       action: "Open plan",
       icon: ListTodo,
     },
@@ -30,7 +31,7 @@ export function ProjectGettingStarted({
       done: sprintCount > 0,
       title: "Create a sprint",
       description: "Time-box work so the team knows what to focus on.",
-      href: `/projects/${projectId}/sprints/`,
+      href: projectHref(projectId, "sprints/"),
       action: "View sprints",
       icon: Rocket,
     },
@@ -39,7 +40,7 @@ export function ProjectGettingStarted({
       done: hasActiveSprint,
       title: "Open the Kanban board",
       description: "Move tasks through To do → Done with your team.",
-      href: `/projects/${projectId}/sprints/`,
+      href: projectHref(projectId, "sprints/"),
       action: "Go to board",
       icon: LayoutGrid,
     },
