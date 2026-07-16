@@ -1,3 +1,4 @@
+import { BASE_PATH } from "@/lib/base-path";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 export class ApiError extends Error {
@@ -37,7 +38,7 @@ export async function apiClient<T>(
   if (response.status === 401) {
     useAuthStore.getState().logout();
     if (typeof window !== "undefined") {
-      window.location.href = "/login/";
+      window.location.href = `${BASE_PATH}/login/`;
     }
     throw new ApiError(401, "Unauthorized");
   }

@@ -23,10 +23,17 @@ Open [http://localhost:3000](http://localhost:3000).
 Copy `.env.example` to `.env.local`:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8080/api
 NEXT_PUBLIC_USE_MSW=true
 NEXT_PUBLIC_STANDUP_END_HOUR=10
 ```
+
+Production builds (see `.env.production`) also set:
+
+```env
+NEXT_PUBLIC_BASE_PATH=/SES/PM
+```
+
+API base defaults to `/api` in`dev` and `/SES/PM/api` in production (under the same `basePath` so MSW can intercept). Override with `NEXT_PUBLIC_API_URL` if needed.
 
 - `NEXT_PUBLIC_USE_MSW=true` — intercept API calls with MSW (development/demo)
 - `NEXT_PUBLIC_USE_MSW=false` — call the Java/Tomcat REST API at `NEXT_PUBLIC_API_URL`
@@ -41,9 +48,10 @@ Output is written to `out/`. Serve the folder as static files (Tomcat, nginx, CD
 
 ### Tomcat
 
-1. Copy contents of `out/` to a Tomcat webapp directory (e.g. `webapps/agileflow/`).
-2. Ensure `mockServiceWorker.js` is served from the app root when using MSW in production demos.
-3. For client-side routes, configure a 404 fallback to `index.html` if your server requires it for unknown paths.
+1. Copy contents of `out/` so they are served at **`/SES/PM/`** (matches `basePath`), e.g. `webapps/SES/PM/` depending on your layout.
+2. Ensure `mockServiceWorker.js` is reachable at `/SES/PM/mockServiceWorker.js`.
+3. Prefer HTTPS (or localhost). Service workers do not run on plain HTTP LAN IPs.
+4. For client-side routes, configure a 404 fallback to `index.html` if your server requires it for unknown paths.
 
 ## API contract
 

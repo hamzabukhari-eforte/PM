@@ -18,6 +18,7 @@ import { useUiStore } from "@/lib/stores/ui-store";
 import { Button } from "@/components/ui/button";
 import { roleLabel } from "@/lib/utils/roles";
 import { useProjectBoard } from "@/lib/hooks/use-project-board";
+import { BASE_PATH } from "@/lib/base-path";
 
 const navItems = [
   { href: "/dashboard/", label: "Dashboard", icon: LayoutDashboard },
@@ -118,7 +119,7 @@ export function Sidebar() {
             className="w-full justify-start gap-2 text-indigo-200/80 hover:bg-white/10 hover:text-white"
             onClick={() => {
               logout();
-              window.location.href = "/login/";
+              window.location.href = `${BASE_PATH}/login/`;
             }}
           >
             <LogOut className="h-4 w-4" />
