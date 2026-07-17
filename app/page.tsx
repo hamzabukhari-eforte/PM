@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { LoadingState } from "@/components/ui/loading-state";
+import { BASE_PATH } from "@/lib/base-path";
 
 export default function HomePage() {
-  const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
-    router.replace(isAuthenticated() ? "/dashboard/" : "/login/");
-  }, [router, isAuthenticated]);
+    const path = isAuthenticated() ? "/dashboard/" : "/login/";
+    window.location.replace(`${BASE_PATH}${path}`);
+  }, [isAuthenticated]);
 
   return <LoadingState />;
 }
