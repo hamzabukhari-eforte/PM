@@ -16,7 +16,7 @@ export function PageContent({
   return (
     <div
       className={cn(
-        "page-enter w-full min-w-0 space-y-6 p-6 lg:px-8 lg:py-8 xl:px-10",
+        "page-enter w-full min-w-0 space-y-6 p-5 lg:px-8 lg:py-5 xl:px-10",
         width === "form" && "max-w-6xl",
         className,
       )}

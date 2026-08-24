@@ -12,7 +12,8 @@ import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type { CreateProjectInput, Project } from "@/lib/api/types";
 import { ticketDateLocalToIsoDate } from "@/lib/utils/ticket-datetime";
-import { projectHref } from "@/lib/utils/static-routes";
+import { useUiStore } from "@/lib/stores/ui-store";
+import { SCREEN_PATHS } from "@/lib/navigation/screen-paths";
 
 function toCreateInput(data: ProjectFormData): CreateProjectInput {
   return {
@@ -41,6 +42,7 @@ function toCreateInput(data: ProjectFormData): CreateProjectInput {
 
 export default function NewProjectPage() {
   const router = useRouter();
+  const setActiveProjectId = useUiStore((s) => s.setActiveProjectId);
 
   const mutation = useMutation({
     mutationFn: (data: ProjectFormData) =>
@@ -48,7 +50,10 @@ export default function NewProjectPage() {
         method: "POST",
         body: JSON.stringify(toCreateInput(data)),
       }),
-    onSuccess: (project) => router.push(projectHref(project.id)),
+    onSuccess: (project) => {
+      setActiveProjectId(project.id);
+      router.push(SCREEN_PATHS.project);
+    },
   });
 
   const draftMutation = useMutation({
@@ -57,7 +62,10 @@ export default function NewProjectPage() {
         method: "POST",
         body: JSON.stringify({ ...toCreateInput(data), isDraft: true }),
       }),
-    onSuccess: (project) => router.push(projectHref(project.id)),
+    onSuccess: (project) => {
+      setActiveProjectId(project.id);
+      router.push(SCREEN_PATHS.project);
+    },
   });
 
   return (
@@ -67,7 +75,7 @@ export default function NewProjectPage() {
         description="Add the basics now — fill in advanced details later if you need them."
         actions={
           <Button variant="outline" asChild>
-            <Link href="/projects/">Cancel</Link>
+            <Link href={SCREEN_PATHS.projects}>Cancel</Link>
           </Button>
         }
       />
@@ -76,7 +84,7 @@ export default function NewProjectPage() {
           mode="create"
           onSubmit={(data) => mutation.mutate(data)}
           onSaveDraft={(data) => draftMutation.mutate(data)}
-          onCancel={() => router.push("/projects/")}
+          onCancel={() => router.push(SCREEN_PATHS.projects)}
           loading={mutation.isPending || draftMutation.isPending}
           submitLabel="Create project"
         />

@@ -10,24 +10,24 @@ import { ErrorState } from "@/components/ui/error-state";
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type { ProjectMember } from "@/lib/api/types";
-import { useResolvedProjectId } from "@/lib/hooks/use-route-ids";
+import { useRequireProjectId } from "@/lib/hooks/use-project-context";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { canManageTeam } from "@/lib/utils/roles";
 
 export function TeamView() {
-  const projectId = useResolvedProjectId();
+  const projectId = useRequireProjectId();
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
 
   const { data: members = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["members", projectId],
-    queryFn: () => apiClient<ProjectMember[]>(endpoints.projects.members(projectId)),
+    queryFn: () => apiClient<ProjectMember[]>(endpoints.projects.members(projectId!)),
     enabled: !!projectId,
   });
 
   const inviteMutation = useMutation({
     mutationFn: (body: { email: string; role: ProjectMember["role"] }) =>
-      apiClient(endpoints.projects.invite(projectId), {
+      apiClient(endpoints.projects.invite(projectId!), {
         method: "POST",
         body: JSON.stringify(body),
       }),
@@ -36,12 +36,21 @@ export function TeamView() {
 
   const roleMutation = useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: ProjectMember["role"] }) =>
-      apiClient(endpoints.projects.member(projectId, userId), {
+      apiClient(endpoints.projects.member(projectId!, userId), {
         method: "PATCH",
         body: JSON.stringify({ role }),
       }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["members", projectId] }),
   });
+
+  if (!projectId) {
+    return (
+      <>
+        <AppHeader title="Team" />
+        <LoadingState label="Select a project…" />
+      </>
+    );
+  }
 
   return (
     <>

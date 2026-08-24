@@ -1,11 +1,12 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Project } from "@/lib/api/types";
 import { BoardQuickLinkOutline } from "@/components/layout/board-quick-link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { projectHref } from "@/lib/utils/static-routes";
+import { useUiStore } from "@/lib/stores/ui-store";
+import { SCREEN_PATHS } from "@/lib/navigation/screen-paths";
 
 export function ProjectTable({
   projects,
@@ -14,6 +15,14 @@ export function ProjectTable({
   projects: Project[];
   onArchive?: (id: string) => void;
 }) {
+  const router = useRouter();
+  const setActiveProjectId = useUiStore((s) => s.setActiveProjectId);
+
+  function openProject(id: string) {
+    setActiveProjectId(id);
+    router.push(SCREEN_PATHS.project);
+  }
+
   return (
     <div className="scrollbar-hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
       <table className="w-full min-w-[720px] border-collapse text-[14px]">
@@ -27,57 +36,55 @@ export function ProjectTable({
           </tr>
         </thead>
         <tbody className="text-slate-700">
-          {projects.map((project) => {
-            const href = projectHref(project.id);
-            return (
-              <tr key={project.id} className="border-b border-slate-100 hover:bg-indigo-50/30">
-                <td className="px-4 py-3 align-middle">
-                  <Link
-                    href={href}
-                    className="font-medium text-slate-900 hover:text-indigo-700"
-                  >
-                    {project.name}
-                  </Link>
-                  {project.description && (
-                    <p className="mt-0.5 line-clamp-1 text-sm text-slate-500">{project.description}</p>
-                  )}
-                  {project.isDraft && (
-                    <Badge variant="secondary" className="mt-1 text-[10px]">
-                      Draft
-                    </Badge>
-                  )}
-                </td>
-                <td className="px-4 py-3 align-middle whitespace-nowrap">{project.memberCount}</td>
-                <td className="px-4 py-3 align-middle">
-                  <Badge variant="secondary" className="bg-indigo-50 text-indigo-700">
-                    {project.activeSprintCount}
+          {projects.map((project) => (
+            <tr key={project.id} className="border-b border-slate-100 hover:bg-indigo-50/30">
+              <td className="px-4 py-3 align-middle">
+                <button
+                  type="button"
+                  onClick={() => openProject(project.id)}
+                  className="font-medium text-slate-900 hover:text-indigo-700"
+                >
+                  {project.name}
+                </button>
+                {project.description && (
+                  <p className="mt-0.5 line-clamp-1 text-sm text-slate-500">{project.description}</p>
+                )}
+                {project.isDraft && (
+                  <Badge variant="secondary" className="mt-1 text-[10px]">
+                    Draft
                   </Badge>
-                </td>
-                <td className="px-4 py-3 align-middle whitespace-nowrap text-sm text-slate-600">
-                  {project.startDate ?? "—"} → {project.endDate ?? "—"}
-                </td>
-                <td className="px-4 py-3 align-middle">
-                  <div className="flex items-center justify-end gap-2">
-                    <BoardQuickLinkOutline projectId={project.id} />
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={href}>Overview</Link>
+                )}
+              </td>
+              <td className="px-4 py-3 align-middle whitespace-nowrap">{project.memberCount}</td>
+              <td className="px-4 py-3 align-middle">
+                <Badge variant="secondary" className="bg-indigo-50 text-indigo-700">
+                  {project.activeSprintCount}
+                </Badge>
+              </td>
+              <td className="px-4 py-3 align-middle whitespace-nowrap text-sm text-slate-600">
+                {project.startDate ?? "—"} → {project.endDate ?? "—"}
+              </td>
+              <td className="px-4 py-3 align-middle">
+                <div className="flex items-center justify-end gap-2">
+                  <BoardQuickLinkOutline projectId={project.id} />
+                  <Button variant="ghost" size="sm" onClick={() => openProject(project.id)}>
+                    Overview
+                  </Button>
+                  {onArchive && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={() => onArchive(project.id)}
+                    >
+                      Archive
                     </Button>
-                    {onArchive && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="text-muted-foreground hover:text-destructive"
-                        onClick={() => onArchive(project.id)}
-                      >
-                        Archive
-                      </Button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>

@@ -19,19 +19,18 @@ import {
   defaultTodoColumnId,
   useProjectMembers,
 } from "@/lib/hooks/use-project-members";
-import { useResolvedProjectId, useResolvedSprintId } from "@/lib/hooks/use-route-ids";
+import { useRequireSprintContext } from "@/lib/hooks/use-project-context";
 import { buildLinkTargets } from "@/lib/utils/task-hierarchy";
-import { sprintHref } from "@/lib/utils/static-routes";
+import { SCREEN_PATHS } from "@/lib/navigation/screen-paths";
 
 export function SprintDetailView() {
-  const projectId = useResolvedProjectId();
-  const sprintId = useResolvedSprintId();
+  const { projectId, sprintId } = useRequireSprintContext();
   const queryClient = useQueryClient();
 
   const sprintQuery = useQuery({
     queryKey: ["sprint", projectId, sprintId],
     queryFn: async () => {
-      const all = await apiClient<Sprint[]>(endpoints.projects.sprints(projectId));
+      const all = await apiClient<Sprint[]>(endpoints.projects.sprints(projectId!));
       return all.find((s) => s.id === sprintId) ?? null;
     },
     enabled: !!projectId && !!sprintId,
@@ -39,23 +38,23 @@ export function SprintDetailView() {
 
   const backlogQuery = useQuery({
     queryKey: ["backlog", projectId, sprintId],
-    queryFn: () => apiClient<Task[]>(endpoints.projects.backlog(projectId, sprintId)),
+    queryFn: () => apiClient<Task[]>(endpoints.projects.backlog(projectId!, sprintId!)),
     enabled: !!projectId && !!sprintId,
   });
 
   const boardQuery = useQuery({
     queryKey: ["board", projectId, sprintId],
-    queryFn: () => apiClient<Board>(endpoints.projects.board(projectId, sprintId)),
+    queryFn: () => apiClient<Board>(endpoints.projects.board(projectId!, sprintId!)),
     enabled: !!projectId && !!sprintId,
   });
 
   const linkTargets = boardQuery.data ? buildLinkTargets(boardQuery.data) : [];
 
-  const membersQuery = useProjectMembers(projectId);
+  const membersQuery = useProjectMembers(projectId ?? undefined);
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateTaskInput) =>
-      apiClient(endpoints.projects.tasks(projectId, sprintId), {
+      apiClient(endpoints.projects.tasks(projectId!, sprintId!), {
         method: "POST",
         body: JSON.stringify(payload),
       }),
@@ -70,11 +69,20 @@ export function SprintDetailView() {
     createMutation.mutate({
       title: data.title,
       description: data.description,
-      columnId: defaultTodoColumnId(sprintId),
+      columnId: defaultTodoColumnId(sprintId!),
       assigneeIds: data.assigneeIds ?? [],
       storyPoints: data.storyPoints ? Number(data.storyPoints) : null,
       subtasks: data.subtasks?.length ? formSubtasksToCreateInput(data.subtasks) : undefined,
     });
+  }
+
+  if (!projectId || !sprintId) {
+    return (
+      <>
+        <AppHeader title="Sprint" />
+        <LoadingState label="Select a project and sprint…" />
+      </>
+    );
   }
 
   const sprint = sprintQuery.data;
@@ -93,9 +101,7 @@ export function SprintDetailView() {
                 {sprint.startDate} → {sprint.endDate}
               </p>
               <Button asChild>
-                <Link href={sprintHref(projectId, sprintId, "board/")}>
-                  Open board
-                </Link>
+                <Link href={SCREEN_PATHS.board}>Open board</Link>
               </Button>
             </div>
             <p className="text-muted-foreground">{sprint.goal}</p>

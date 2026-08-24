@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { BarChart3, ClipboardList, Settings, Users } from "lucide-react";
 import { AppHeader } from "@/components/layout/app-header";
 import { BoardQuickLink } from "@/components/layout/board-quick-link";
@@ -17,28 +18,22 @@ import { ErrorState } from "@/components/ui/error-state";
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type { Project, ProjectLookups, ProjectPlan, Sprint } from "@/lib/api/types";
-import { useResolvedProjectId } from "@/lib/hooks/use-route-ids";
-import { useUiStore } from "@/lib/stores/ui-store";
+import { useRequireProjectId } from "@/lib/hooks/use-project-context";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { SCREEN_PATHS } from "@/lib/navigation/screen-paths";
 import { canManageProjects, canManageTeam } from "@/lib/utils/roles";
 import { countPlanTasks } from "@/lib/utils/project-lookups";
-import { projectHref } from "@/lib/utils/static-routes";
 import { cn } from "@/lib/utils";
 
 export function ProjectDetailView() {
-  const projectId = useResolvedProjectId();
-  const setActiveProjectId = useUiStore((s) => s.setActiveProjectId);
+  const projectId = useRequireProjectId();
   const user = useAuthStore((s) => s.user);
   const canManage = canManageTeam(user?.role);
   const canSettings = canManageProjects(user?.role);
 
-  useEffect(() => {
-    if (projectId) setActiveProjectId(projectId);
-  }, [projectId, setActiveProjectId]);
-
   const { data: project, isLoading, isError, refetch } = useQuery({
     queryKey: ["project", projectId],
-    queryFn: () => apiClient<Project>(endpoints.projects.detail(projectId)),
+    queryFn: () => apiClient<Project>(endpoints.projects.detail(projectId!)),
     enabled: !!projectId,
   });
 
@@ -49,13 +44,13 @@ export function ProjectDetailView() {
 
   const planQuery = useQuery({
     queryKey: ["plan", projectId],
-    queryFn: () => apiClient<ProjectPlan>(endpoints.projects.plan(projectId)),
+    queryFn: () => apiClient<ProjectPlan>(endpoints.projects.plan(projectId!)),
     enabled: !!projectId,
   });
 
   const sprintsQuery = useQuery({
     queryKey: ["sprints", projectId],
-    queryFn: () => apiClient<Sprint[]>(endpoints.projects.sprints(projectId)),
+    queryFn: () => apiClient<Sprint[]>(endpoints.projects.sprints(projectId!)),
     enabled: !!projectId,
   });
 
@@ -65,6 +60,14 @@ export function ProjectDetailView() {
   );
   const sprintCount = sprintsQuery.data?.length ?? 0;
   const hasActiveSprint = sprintsQuery.data?.some((s) => s.status === "active") ?? false;
+
+  if (!projectId) {
+    return (
+      <PageContent>
+        <LoadingState label="Select a project…" />
+      </PageContent>
+    );
+  }
 
   return (
     <>
@@ -80,33 +83,32 @@ export function ProjectDetailView() {
           <>
             <ProjectDetailHero project={project} projectId={projectId} lookups={lookupsQuery.data} />
             <ProjectGettingStarted
-              projectId={projectId}
               planTaskCount={planTaskCount}
               sprintCount={sprintCount}
               hasActiveSprint={hasActiveSprint}
             />
             <div className={cn("grid gap-4", canSettings ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3")}>
               <ProjectQuickLinkCard
-                href={projectHref(projectId, "plan/")}
+                href={SCREEN_PATHS.plan}
                 icon={ClipboardList}
                 title="Project plan"
                 description="Work breakdown & milestones"
               />
               <ProjectQuickLinkCard
-                href={projectHref(projectId, "team/")}
+                href={SCREEN_PATHS.team}
                 icon={Users}
                 title="Team"
                 description={canManage ? "Manage members" : "View members"}
               />
               <ProjectQuickLinkCard
-                href={projectHref(projectId, "reports/")}
+                href={SCREEN_PATHS.reports}
                 icon={BarChart3}
                 title="Reports"
                 description="Burndown, velocity & metrics"
               />
               {canSettings && (
                 <ProjectQuickLinkCard
-                  href={projectHref(projectId, "settings/")}
+                  href={SCREEN_PATHS.settings}
                   icon={Settings}
                   title="Settings"
                   description="Permissions & plan options"
@@ -114,6 +116,11 @@ export function ProjectDetailView() {
               )}
             </div>
             <ProjectDetailMetaSection project={project} lookups={lookupsQuery.data} />
+            <p className="mt-4 text-sm text-slate-500">
+              <Link href={SCREEN_PATHS.projects} className="text-indigo-600 hover:underline">
+                Back to projects
+              </Link>
+            </p>
           </>
         )}
       </PageContent>

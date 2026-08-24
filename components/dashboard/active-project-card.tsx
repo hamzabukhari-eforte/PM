@@ -1,19 +1,27 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Calendar, CheckSquare, Users } from "lucide-react";
 import type { ActiveProjectSummary } from "@/lib/api/types";
 import { BoardQuickLinkOutline } from "@/components/layout/board-quick-link";
 import { statusLabels, statusStyles } from "@/lib/dashboard-status";
 import { cn } from "@/lib/utils";
-import { projectHref } from "@/lib/utils/static-routes";
+import { useUiStore } from "@/lib/stores/ui-store";
+import { SCREEN_PATHS } from "@/lib/navigation/screen-paths";
 
 export function ActiveProjectCard({ project }: { project: ActiveProjectSummary }) {
   const styles = statusStyles[project.status];
+  const router = useRouter();
+  const setActiveProjectId = useUiStore((s) => s.setActiveProjectId);
+
+  function openProject() {
+    setActiveProjectId(project.projectId);
+    router.push(SCREEN_PATHS.project);
+  }
 
   return (
     <div className="card-interactive rounded-2xl border border-slate-200/80 bg-white p-5">
-      <Link href={projectHref(project.projectId)} className="block">
+      <button type="button" onClick={openProject} className="block w-full text-left">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="truncate text-lg font-semibold text-slate-900">{project.name}</h3>
@@ -58,7 +66,7 @@ export function ActiveProjectCard({ project }: { project: ActiveProjectSummary }
             <span>{project.daysRemaining}d left</span>
           </div>
         </div>
-      </Link>
+      </button>
 
       <div className="mt-4 flex justify-end border-t border-slate-100 pt-4">
         <BoardQuickLinkOutline projectId={project.projectId} />

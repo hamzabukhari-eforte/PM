@@ -4,15 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type { Sprint } from "@/lib/api/types";
-import { projectHref, sprintHref } from "@/lib/utils/static-routes";
+import { SCREEN_PATHS } from "@/lib/navigation/screen-paths";
 
 export function pickPreferredSprint(sprints: Sprint[]): Sprint | null {
   if (sprints.length === 0) return null;
   return sprints.find((s) => s.status === "active") ?? sprints[0] ?? null;
-}
-
-export function boardPath(projectId: string, sprintId: string) {
-  return sprintHref(projectId, sprintId, "board/");
 }
 
 export function useProjectBoard(projectId: string | null | undefined) {
@@ -27,8 +23,9 @@ export function useProjectBoard(projectId: string | null | undefined) {
 
   return {
     sprint,
-    boardUrl: sprint && projectId ? boardPath(projectId, sprint.id) : null,
-    sprintsUrl: projectId ? projectHref(projectId, "sprints/") : null,
+    boardUrl: sprint && projectId ? SCREEN_PATHS.board : null,
+    preferredSprintId: sprint?.id ?? null,
+    sprintsUrl: projectId ? SCREEN_PATHS.sprints : null,
     isLoading: query.isLoading,
   };
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { AppHeader } from "@/components/layout/app-header";
@@ -13,34 +12,28 @@ import { RoleGuard } from "@/components/auth/role-guard";
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type { Project, ProjectPlan } from "@/lib/api/types";
-import { useResolvedProjectId } from "@/lib/hooks/use-route-ids";
-import { useUiStore } from "@/lib/stores/ui-store";
-import { projectHref } from "@/lib/utils/static-routes";
+import { useRequireProjectId } from "@/lib/hooks/use-project-context";
+import { SCREEN_PATHS } from "@/lib/navigation/screen-paths";
 
 export function ProjectSettingsView() {
-  const projectId = useResolvedProjectId();
+  const projectId = useRequireProjectId();
   const queryClient = useQueryClient();
-  const setActiveProjectId = useUiStore((s) => s.setActiveProjectId);
-
-  useEffect(() => {
-    if (projectId) setActiveProjectId(projectId);
-  }, [projectId, setActiveProjectId]);
 
   const projectQuery = useQuery({
     queryKey: ["project", projectId],
-    queryFn: () => apiClient<Project>(endpoints.projects.detail(projectId)),
+    queryFn: () => apiClient<Project>(endpoints.projects.detail(projectId!)),
     enabled: !!projectId,
   });
 
   const planQuery = useQuery({
     queryKey: ["plan", projectId],
-    queryFn: () => apiClient<ProjectPlan>(endpoints.projects.plan(projectId)),
+    queryFn: () => apiClient<ProjectPlan>(endpoints.projects.plan(projectId!)),
     enabled: !!projectId,
   });
 
   const savePlanMutation = useMutation({
     mutationFn: (plan: ProjectPlan) =>
-      apiClient<ProjectPlan>(endpoints.projects.plan(projectId), {
+      apiClient<ProjectPlan>(endpoints.projects.plan(projectId!), {
         method: "PUT",
         body: JSON.stringify(plan),
       }),
@@ -52,6 +45,15 @@ export function ProjectSettingsView() {
   const plan = planQuery.data;
   const project = projectQuery.data;
 
+  if (!projectId) {
+    return (
+      <RoleGuard roles={["admin"]} fallback={<p className="p-8 text-destructive">Access denied.</p>}>
+        <AppHeader title="Project settings" />
+        <LoadingState label="Select a project…" />
+      </RoleGuard>
+    );
+  }
+
   return (
     <RoleGuard roles={["admin"]} fallback={<p className="p-8 text-destructive">Access denied.</p>}>
       <AppHeader
@@ -60,7 +62,7 @@ export function ProjectSettingsView() {
       />
       <PageContent width="form">
         <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-          <Link href={projectHref(projectId)} className="hover:text-primary">
+          <Link href={SCREEN_PATHS.project} className="hover:text-primary">
             Project
           </Link>
           <ChevronRight className="h-4 w-4" />
@@ -106,7 +108,7 @@ export function ProjectSettingsView() {
 
         <div className="mt-6">
           <Button variant="outline" asChild>
-            <Link href={projectHref(projectId)}>Back to project</Link>
+            <Link href={SCREEN_PATHS.project}>Back to project</Link>
           </Button>
         </div>
       </PageContent>

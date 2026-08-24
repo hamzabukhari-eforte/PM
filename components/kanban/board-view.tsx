@@ -11,33 +11,36 @@ import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type { Board } from "@/lib/api/types";
 import { useProjectMembers } from "@/lib/hooks/use-project-members";
-import { useResolvedProjectId, useResolvedSprintId } from "@/lib/hooks/use-route-ids";
+import { useRequireSprintContext } from "@/lib/hooks/use-project-context";
 import { useUiStore } from "@/lib/stores/ui-store";
-import { boardPath } from "@/lib/hooks/use-project-board";
+import { SCREEN_PATHS } from "@/lib/navigation/screen-paths";
 
 export function BoardView() {
-  const projectId = useResolvedProjectId();
-  const sprintId = useResolvedSprintId();
+  const { projectId, sprintId } = useRequireSprintContext();
   const setLastBoard = useUiStore((s) => s.setLastBoard);
-  const setActiveProjectId = useUiStore((s) => s.setActiveProjectId);
 
   const { data: board, isLoading, isError, refetch } = useQuery({
     queryKey: ["board", projectId, sprintId],
-    queryFn: () => apiClient<Board>(endpoints.projects.board(projectId, sprintId)),
+    queryFn: () => apiClient<Board>(endpoints.projects.board(projectId!, sprintId!)),
     enabled: !!projectId && !!sprintId,
   });
 
-  const membersQuery = useProjectMembers(projectId);
-
-  useEffect(() => {
-    if (projectId) setActiveProjectId(projectId);
-  }, [projectId, setActiveProjectId]);
+  const membersQuery = useProjectMembers(projectId ?? undefined);
 
   useEffect(() => {
     if (projectId && sprintId) {
-      setLastBoard(boardPath(projectId, sprintId), "Kanban board");
+      setLastBoard(SCREEN_PATHS.board, "Kanban board");
     }
   }, [projectId, sprintId, setLastBoard]);
+
+  if (!projectId || !sprintId) {
+    return (
+      <>
+        <AppHeader title="Kanban board" />
+        <LoadingState label="Select a project and sprint…" />
+      </>
+    );
+  }
 
   return (
     <>

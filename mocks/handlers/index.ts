@@ -29,6 +29,7 @@ import type {
   ProjectPlan,
   ProjectLookups,
   ProjectReportsSummary,
+  MenuItem,
 } from "@/lib/api/types";
 import { normalizeStandupEntry, standupIncludesProject } from "@/lib/utils/standup";
 import { mergeTaskUpdate, repositionTaskInColumn } from "../data/task-mutations";
@@ -53,6 +54,7 @@ import {
 import { departmentalPocs, projectLookups } from "../data/lookups";
 import { clonePlan, projectPlans, taskFollowups } from "../data/project-plans";
 import { buildProjectReportsSummary } from "../data/project-reports";
+import { menuItems } from "../data/menus";
 
 function getUserFromToken(request: Request): User | null {
   const auth = request.headers.get("Authorization");
@@ -118,6 +120,13 @@ export const handlers = [
       return HttpResponse.json({ message: "Forbidden" }, { status: 403 });
     }
     return HttpResponse.json(users);
+  }),
+
+  http.get(apiPath("menus"), ({ request }) => {
+    const user = requireAuth(request);
+    if (user instanceof Response) return user;
+    const items = [...menuItems].sort((a, b) => a.sortOrder - b.sortOrder);
+    return HttpResponse.json(items satisfies MenuItem[]);
   }),
 
   http.get(apiPath("dashboard"), ({ request }) => {

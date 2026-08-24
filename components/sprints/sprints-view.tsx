@@ -13,25 +13,25 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { apiClient } from "@/lib/api/client";
 import { endpoints } from "@/lib/api/endpoints";
 import type { Sprint } from "@/lib/api/types";
-import { useResolvedProjectId } from "@/lib/hooks/use-route-ids";
+import { useRequireProjectId } from "@/lib/hooks/use-project-context";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { canManageSprints } from "@/lib/utils/roles";
 
 export function SprintsView() {
-  const projectId = useResolvedProjectId();
+  const projectId = useRequireProjectId();
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const [tab, setTab] = useState("active");
 
   const { data: sprints = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["sprints", projectId, tab],
-    queryFn: () => apiClient<Sprint[]>(endpoints.projects.sprints(projectId, tab)),
+    queryFn: () => apiClient<Sprint[]>(endpoints.projects.sprints(projectId!, tab)),
     enabled: !!projectId,
   });
 
   const createMutation = useMutation({
     mutationFn: (data: SprintFormData) =>
-      apiClient(endpoints.projects.sprints(projectId), {
+      apiClient(endpoints.projects.sprints(projectId!), {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -40,12 +40,21 @@ export function SprintsView() {
 
   const closeMutation = useMutation({
     mutationFn: (sprintId: string) =>
-      apiClient(endpoints.projects.sprint(projectId, sprintId), {
+      apiClient(endpoints.projects.sprint(projectId!, sprintId), {
         method: "PATCH",
         body: JSON.stringify({ status: "closed" }),
       }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["sprints", projectId] }),
   });
+
+  if (!projectId) {
+    return (
+      <>
+        <AppHeader title="Sprints" />
+        <LoadingState label="Select a project…" />
+      </>
+    );
+  }
 
   return (
     <>

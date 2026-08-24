@@ -68,4 +68,7 @@ export const endpoints = {
       return apiPath("standup/history", qs || undefined);
     },
   },
+  menus: {
+    list: apiPath("menus"),
+  },
 };

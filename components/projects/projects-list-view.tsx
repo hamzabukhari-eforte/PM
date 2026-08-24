@@ -18,6 +18,7 @@ import type { Project } from "@/lib/api/types";
 import { useViewMode } from "@/lib/hooks/use-view-mode";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { canManageProjects } from "@/lib/utils/roles";
+import { SCREEN_PATHS } from "@/lib/navigation/screen-paths";
 
 export function ProjectsListView() {
   const user = useAuthStore((s) => s.user);
@@ -42,17 +43,21 @@ export function ProjectsListView() {
 
   return (
     <>
-      <AppHeader title="Projects" />
-      <PageContent className="space-y-6">
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <RoleGuard roles={["admin"]}>
-            <Button asChild>
-              <Link href="/projects/new/">New project</Link>
-            </Button>
-          </RoleGuard>
-          <ViewModeToggle value={viewMode} onChange={setViewMode} />
-        </div>
-
+      <AppHeader
+        title="Projects"
+        showProjectSwitcher={false}
+        actions={
+          <>
+            <RoleGuard roles={["admin"]}>
+              <Button size="sm" asChild>
+                <Link href={SCREEN_PATHS.projectsNew}>New project</Link>
+              </Button>
+            </RoleGuard>
+            <ViewModeToggle value={viewMode} onChange={setViewMode} />
+          </>
+        }
+      />
+      <PageContent className="space-y-4">
         {isLoading && <LoadingState />}
         {isError && <ErrorState onRetry={() => void refetch()} />}
 
@@ -63,7 +68,7 @@ export function ProjectsListView() {
             action={
               canArchive ? (
                 <Button asChild>
-                  <Link href="/projects/new/">Create project</Link>
+                  <Link href={SCREEN_PATHS.projectsNew}>Create project</Link>
                 </Button>
               ) : undefined
             }

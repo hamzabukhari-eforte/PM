@@ -46,6 +46,8 @@ npm run build
 
 Output is written to `out/`. Serve the folder as static files (Tomcat, nginx, CDN).
 
+Screens use **fixed paths** (e.g. `/project/`, `/board/`). Project and sprint IDs live in client state, not the URL. Sidebar menus are loaded from `GET /api/menus` (MSW mock for now).
+
 ### Tomcat
 
 1. Copy contents of `out/` so they are served at **`/SES/PM/`** (matches `basePath`), e.g. `webapps/SES/PM/` depending on your layout.

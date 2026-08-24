@@ -559,3 +559,21 @@ export interface TaskFollowupContext {
   formFields: FollowupFormField[];
   latestFollowup: TaskFollowupEntry | null;
 }
+
+/** Nav item from DB / menu API (paths must be allowlisted screens; groups may omit path). */
+export interface MenuItem {
+  id: string;
+  label: string;
+  /** Fixed screen path, or null for a dropdown group with no direct link. */
+  path: string | null;
+  icon?: string | null;
+  sortOrder: number;
+  /** Parent menu id for nested sidebars; null = top level. */
+  parentId?: string | null;
+  /** When true, link is intended for use with an active project in the client store. */
+  requiresProject?: boolean;
+}
+
+export interface MenuTreeNode extends MenuItem {
+  children: MenuTreeNode[];
+}
